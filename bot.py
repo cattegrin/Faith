@@ -5,6 +5,7 @@ import aiohttp
 import json
 from discord import Game
 from discord.ext.commands import Bot
+from discord.utils import get
 import datetime
 
 BOT_PREFIX = ("::")
@@ -121,7 +122,14 @@ async def ticket(context):
                 pass_context=True)
 async def register(context, key):
     if key != 110:
-        await client.sendmessage(context.message.channel)
+        await client.say("Incorreect key. Please contact a server member for the key.")
+    else:
+        client.delete_message(context.message)
+        user = context.message.author
+        verified_role = get(user.server.roles, name='Verified (RuneScape)')
+        client.add_role(user, verified_role)
+        await client.say("User verified!")
+
 
 
 @client.command(name='capped',
