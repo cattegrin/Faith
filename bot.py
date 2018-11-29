@@ -7,6 +7,7 @@ from discord import Game
 from discord.ext.commands import Bot
 from discord.utils import get
 import datetime
+import re
 
 BOT_PREFIX = ("::")
 TOKEN = "NTE1MjYwMTQwNTY4NzA3MTA5.Dt3W_g.mqyeKcMKasaoxYmZu0_9YbM-3kE"  # Get at discordapp.com/developers/applications/me
@@ -63,10 +64,12 @@ async def setrsn(context):
     pairs = users.read()
     users.close()
 
-    name=context.message.content[9:]
+    name = context.message.content[9:]
+    user = context.message.author.mention
+    user = re.sub("<|>|!|@", "", user)
 
     rsn_available = check_rsn(pairs, name)
-    user_available = check_user(pairs, context.message.author.mention)
+    user_available = check_user(pairs, user)
 
     if rsn_available == 1:
         await client.say("The username " + name + " has been claimed. Please contact an Admin for help.")
@@ -94,16 +97,19 @@ async def updatersn(context):
     name = context.message.content[12:]
     pairs = all_users.split("\n")
 
+    user = context.message.author.mention
+    user = re.sub("<|>|!|@", "", user)
+
     if(check_rsn(pairs, name) == 0):
         for idx, a in enumerate(pairs):
-            if context.message.author.mention in pairs[idx]:
-                pairs[idx] = context.message.author.mention + ":" + name
+            if user in pairs[idx]:
+                pairs[idx] = user + ":" + name
 
         rewrite_users = open('users.txt', 'w')
         for idx, a in enumerate(pairs):
             rewrite_users.write(pairs[idx] + "\n")
         rewrite_users.close()
-        await client.say(context.message.author.mention + " has changed their RSN to " + name + ".")
+        await client.say(user + " has changed their RSN to " + name + ".")
     else:
         await client.say("The username " + name + " has been claimed. Please contact an Admin for help.")
 
@@ -174,6 +180,23 @@ async def citadel_reset(context):
 
     await client.say("You do not have permission to use this command.")
 
+'''
+@client.command(name='resync_users')
+async def resync_users():
+    user_file = open('users.txt', 'r')
+    user_list = user_file.read()
+    user_file.close()
+
+    users = user_list.split('\n')
+    rewrite_users = open('users.txt', 'w')
+
+
+    for user in users:
+        user = re.sub("<|>|!|@", "", user)
+        rewrite_users.write(user + '\n')
+'''
+
+
 
 
 @client.command(name='hello',
@@ -242,7 +265,7 @@ def get_rsn(user):
 
     pairs = all_users.split("\n")
 
-    if(check_user(pairs, user) == 0):
+    if check_user(pairs, user) == 0:
         for idx, a in enumerate(pairs):
             if user in pairs[idx]:
                 user_info=pairs[idx].split(':')
