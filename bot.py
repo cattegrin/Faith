@@ -10,7 +10,7 @@ import datetime
 import re
 
 BOT_PREFIX = ("::")
-TOKEN = "NTE1MjYwMTQwNTY4NzA3MTA5.Dt3W_g.mqyeKcMKasaoxYmZu0_9YbM-3kE"  # Get at discordapp.com/developers/applications/me
+TOKEN = "TOKEN HERE"  # Get at discordapp.com/developers/applications/me
 
 client = Bot(command_prefix=BOT_PREFIX)
 ss_season = True
