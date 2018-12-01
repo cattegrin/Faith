@@ -10,7 +10,7 @@ import datetime
 import re
 
 BOT_PREFIX = ("::")
-TOKEN = "TOKEN HERE"  # Get at discordapp.com/developers/applications/me
+TOKEN = "NTE1MjYwMTQwNTY4NzA3MTA5.DuObIw.UprRvyYWdCU4_xLW726BfP-lwO8"  # Get at discordapp.com/developers/applications/me
 
 client = Bot(command_prefix=BOT_PREFIX)
 ss_season = True
@@ -109,7 +109,7 @@ async def updatersn(context):
         for idx, a in enumerate(pairs):
             rewrite_users.write(pairs[idx] + "\n")
         rewrite_users.close()
-        await client.say(user + " has changed their RSN to " + name + ".")
+        await client.say(context.message.author.mention + " has changed their RSN to " + name + ".")
     else:
         await client.say("The username " + name + " has been claimed. Please contact an Admin for help.")
 
@@ -180,21 +180,26 @@ async def citadel_reset(context):
 
     await client.say("You do not have permission to use this command.")
 
-'''
-@client.command(name='resync_users')
-async def resync_users():
-    user_file = open('users.txt', 'r')
-    user_list = user_file.read()
-    user_file.close()
 
-    users = user_list.split('\n')
-    rewrite_users = open('users.txt', 'w')
+@client.command(name='resync_users',
+                pass_context=True)
+async def resync_users(context):
+    user_roles = context.message.author.roles
+    for role in user_roles:
+        if '🗝️ FiH Leader' == role.name or '💙 I Fucking Love Cyan' == role.name:
+            user_file = open('users.txt', 'r')
+            user_list = user_file.read()
+            user_file.close()
+
+            users = user_list.split('\n')
+            rewrite_users = open('users.txt', 'w')
 
 
-    for user in users:
-        user = re.sub("<|>|!|@", "", user)
-        rewrite_users.write(user + '\n')
-'''
+            for user in users:
+                user = re.sub("<|>|!|@", "", user)
+                rewrite_users.write(user + '\n')
+                print (user)
+
 
 
 
@@ -227,7 +232,7 @@ async def santa(context):
                                                                    "Please set it with ::setrsn <name>.")
     else:
         if player_rsn in ss_entries:
-            await client.say("You've already entered the Secret Santa event " + context.message.author.mention + "!")
+            await client.say("You've already entered the Secret Santa event " + player_rsn + "!")
             return
         ss_list = open('secret_santa.txt', 'a')
         ss_list.write(player_rsn + "\n")
@@ -235,7 +240,16 @@ async def santa(context):
         await client.say(context.message.author.mention + " has joined the Secret Santa event!")
 
 
+@client.command(name='checkrsn',
+                brief='Check to see what your RSN is set to.',
+                pass_context=True)
+async def checkrsn(context):
+    player_rsn = get_rsn(context.message.author.mention)
 
+    if player_rsn is None:
+        await client.say("You have not set your RSN yet " + context.message.author.mention)
+    else:
+        await client.say("Your RSN is set to " + player_rsn + ".")
 
 
 async def list_servers():
@@ -262,6 +276,8 @@ def get_rsn(user):
     users = open('users.txt', 'r')
     all_users = users.read()
     users.close()
+
+    user = re.sub("<|>|!|@", "", user)
 
     pairs = all_users.split("\n")
 
