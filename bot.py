@@ -30,6 +30,10 @@ async def eight_ball(context):
         'Too hard to tell',
         'It is quite possible',
         'Definitely',
+        'What are you, a cop',
+        "I don't feel comfortable answering that",
+        'Why are you even asking, its obviously a yes',
+        'Just no'
     ]
     await client.say(random.choice(possible_responses) + ", " + context.message.author.mention)
 
