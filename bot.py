@@ -6,8 +6,10 @@ import json
 from discord import Game
 from discord.ext.commands import Bot
 from discord.utils import get
+from discord.utils import find
 import datetime
 import re
+import random
 
 BOT_PREFIX = ("::")
 token_file = open('token.txt', 'r')
@@ -15,6 +17,7 @@ TOKEN = token_file.read()# Get at discordapp.com/developers/applications/me
 token_file.close()
 
 client = Bot(command_prefix=BOT_PREFIX)
+
 ss_season = True
 
 
@@ -24,18 +27,35 @@ ss_season = True
                 aliases=['eight_ball', 'eightball', '8-ball'],
                 pass_context=True)
 async def eight_ball(context):
-    possible_responses = [
-        'That is a resounding no',
-        'It is not looking likely',
-        'Too hard to tell',
-        'It is quite possible',
-        'Definitely',
-        'What are you, a cop',
-        "I don't feel comfortable answering that",
-        'Why are you even asking, its obviously a yes',
-        'Just no'
-    ]
-    await client.say(random.choice(possible_responses) + ", " + context.message.author.mention)
+    user = context.message.author.mention
+    user = re.sub("<|>|!|@", "", user)
+
+    player_rsn = get_rsn(user)
+    if player_rsn is None:
+        await client.say("I noticed you haven't yet set your RSN, you can do so by doing ::setrsn <name>.\n")
+        player_rsn='not_malnec'
+
+
+    if player_rsn.lower() == 'malnec':
+        possible_responses = [
+            'Fuck yes',
+            'Hell no',
+            "I don't like you"
+        ]
+        await client.say(random.choice(possible_responses) + ", " + context.message.author.mention)
+    else:
+        possible_responses = [
+            'That is a resounding no',
+            'It is not looking likely',
+            'Too hard to tell',
+            'It is quite possible',
+            'Definitely',
+            'What are you, a cop',
+            "I don't feel comfortable answering that",
+            'Why are you even asking, its obviously a yes',
+            'Just no'
+        ]
+        await client.say(random.choice(possible_responses) + ", " + context.message.author.mention)
 
 
 @client.event
@@ -207,7 +227,60 @@ async def resync_users(context):
                 print (user)
 
 
+@client.command(name='launch_santa',
+                brief='Gets list of secret santa users.',
+                pass_context=True)
+async def launch_santa(context):
+    user_roles = context.message.author.roles
+    for role in user_roles:
+        if '🗝️ FiH Leader' == role.name:
+            santa_file = open('secret_santa.txt', 'r')
+            participants = santa_file.read()
+            santa_file.close()
 
+            participant_list = participants.split('\n')
+            participant_users = []
+
+            for p in participant_list:
+                user = get_user(p)
+                if user is not None:
+                    participant_users.append(user)
+
+            JAYCOLE = find(lambda m: m.mention == get_user("Jaycole"), context.message.channel.server.members)
+            SENDER_LIST = []
+            # Member is a subclass of User, member is a Member
+            # participant_users is an array of mentions
+            for p in participant_users:
+                member = find(lambda m: m.mention == p, context.message.channel.server.members)
+                if member is None:
+                    p = re.sub("!", "", p)
+                    member = find(lambda m: m.mention == p, context.message.channel.server.members)
+                print(member)
+                SENDER_LIST.append(member)
+
+            users = open('secret_santa.txt', 'r')
+            receiver_list = users.read()
+            users.close()
+
+            receivers = receiver_list.split('\n')
+
+            f = open("santa_log.txt", "w+")
+
+            for user in SENDER_LIST:
+                s = random.uniform(0, receivers.__len__())
+                s = round(s)
+                receiver = receivers[s - 1]
+
+                while receiver == get_rsn(user.mention):
+                    s = random.uniform(0, receivers.__len__())
+                    s = round(s)
+                    receiver = receiver_list[s - 1]
+
+                print(receivers[s - 1] + " popped")
+                receivers.pop(s - 1)
+                print((user.name + " got " + receiver))
+                f.write((user.name + " got " + receiver + '\n'))
+            f.close()
 
 
 @client.command(name='hello',
@@ -278,6 +351,7 @@ def check_user(pairs, user):
         return 1
     return 0
 
+
 def get_rsn(user):
     users = open('users.txt', 'r')
     all_users = users.read()
@@ -293,6 +367,25 @@ def get_rsn(user):
                 user_info=pairs[idx].split(':')
                 return user_info[1]
     return None
+
+
+def get_user(rsn):
+    users = open('users.txt', 'r')
+    all_users = users.read()
+    users.close()
+
+    user_list = all_users.split('\n')
+
+    user = None
+
+    for u in user_list:
+        if rsn in u:
+            user_split = u.split(':')
+            user_handle = user_split[0]
+            user_handle = "<@!" + user_handle + ">"
+            return user_handle
+
+
 
 client.loop.create_task(list_servers())
 client.run(TOKEN)
