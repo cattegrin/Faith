@@ -10,7 +10,7 @@ from discord.utils import find
 import datetime
 import re
 import random
-
+import time
 BOT_PREFIX = ("::")
 token_file = open('token.txt', 'r')
 TOKEN = token_file.read()# Get at discordapp.com/developers/applications/me
@@ -207,26 +207,6 @@ async def citadel_reset(context):
     await client.say("You do not have permission to use this command.")
 
 
-@client.command(name='resync_users',
-                pass_context=True)
-async def resync_users(context):
-    user_roles = context.message.author.roles
-    for role in user_roles:
-        if '🗝️ FiH Leader' == role.name or '💙 I Fucking Love Cyan' == role.name:
-            user_file = open('users.txt', 'r')
-            user_list = user_file.read()
-            user_file.close()
-
-            users = user_list.split('\n')
-            rewrite_users = open('users.txt', 'w')
-
-
-            for user in users:
-                user = re.sub("<|>|!|@", "", user)
-                rewrite_users.write(user + '\n')
-                print (user)
-
-
 @client.command(name='launch_santa',
                 brief='Gets list of secret santa users.',
                 pass_context=True)
@@ -247,6 +227,12 @@ async def launch_santa(context):
                     participant_users.append(user)
 
             JAYCOLE = find(lambda m: m.mention == get_user("Jaycole"), context.message.channel.server.members)
+            if JAYCOLE is None:
+                j_user = get_user("Jaycole")
+                j_user = re.sub("!", "", j_user)
+                JAYCOLE = find(lambda m: m.mention == j_user, context.message.channel.server.members)
+
+
             SENDER_LIST = []
             # Member is a subclass of User, member is a Member
             # participant_users is an array of mentions
@@ -267,19 +253,26 @@ async def launch_santa(context):
             f = open("santa_log.txt", "w+")
 
             for user in SENDER_LIST:
+                #print (user.name + ": ")
+                print(receivers)
                 s = random.uniform(0, receivers.__len__())
                 s = round(s)
                 receiver = receivers[s - 1]
 
-                while receiver == get_rsn(user.mention):
+                while receiver == get_rsn(user.mention) and receiver is not None:
                     s = random.uniform(0, receivers.__len__())
                     s = round(s)
-                    receiver = receiver_list[s - 1]
+                    receiver = receivers[s - 1]
 
-                print(receivers[s - 1] + " popped")
+                #print(receivers[s - 1] + " popped")
                 receivers.pop(s - 1)
-                print((user.name + " got " + receiver))
+                #print((user.name + " got " + receiver))
+                #await client.send_message(user, "Hey " + get_rsn(user.mention) + ", your secret santa target is " + receiver + "!")
+                await client.send_message(JAYCOLE, "Hey " + get_rsn(user.mention) + ", your secret santa target is " + receiver + "!")
                 f.write((user.name + " got " + receiver + '\n'))
+
+                time.sleep(1)
+
             f.close()
 
 
@@ -337,7 +330,24 @@ async def list_servers():
         print("Current servers:")
         for server in client.servers:
             print(server.name)
+
+        user_file = open('users.txt', 'r')
+        user_list = user_file.read()
+        user_file.close()
+
+        users = user_list.split('\n')
+        rewrite_users = open('users.txt', 'w')
+
+        for user in users:
+            user = re.sub("<|>|!|@", "", user)
+            if user.__len__() > 3:
+                rewrite_users.write(user + '\n')
+                print(user)
+
+        rewrite_users.close()
+
         await asyncio.sleep(600)
+
 
 
 def check_rsn(pairs, name):
