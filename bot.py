@@ -105,7 +105,7 @@ async def setrsn(context):
     if rsn_available == user_available == 0:
         aff = open('users.txt', 'a')
 
-        combo = context.message.author.mention + ":" + name
+        combo = user + ":" + name
         aff.write(combo + "\n")
         print(combo)
 
@@ -264,16 +264,19 @@ async def launch_santa(context):
                     s = round(s)
                     receiver = receivers[s - 1]
 
-                #print(receivers[s - 1] + " popped")
                 receivers.pop(s - 1)
-                #print((user.name + " got " + receiver))
-                #await client.send_message(user, "Hey " + get_rsn(user.mention) + ", your secret santa target is " + receiver + "!")
-                await client.send_message(JAYCOLE, "Hey " + get_rsn(user.mention) + ", your secret santa target is " + receiver + "!")
+                try:
+                    await client.send_message(user, "Hey " + get_rsn(user.mention) + ", I'm sorry but my previous message was incorrect. Your secret santa target is " + receiver + "!")
+                except:
+                    await client.send_message(JAYCOLE, "Hey " + get_rsn(user.mention) + ", your secret santa target is " + receiver + "!")
+
+                #await client.send_message(JAYCOLE, "Hey " + get_rsn(user.mention) + ", your secret santa target is " + receiver + "!")
                 f.write((user.name + " got " + receiver + '\n'))
 
                 time.sleep(1)
 
             f.close()
+            await client.say("Secret Santa targets have been sent out! Check your inbox for your person!")
 
 
 @client.command(name='hello',
@@ -347,7 +350,6 @@ async def list_servers():
         rewrite_users.close()
 
         await asyncio.sleep(600)
-
 
 
 def check_rsn(pairs, name):
