@@ -27,23 +27,31 @@ ss_season = True
                 aliases=['eight_ball', 'eightball', '8-ball'],
                 pass_context=True)
 async def eight_ball(context):
-    user = context.message.author.mention
-    user = re.sub("<|>|!|@", "", user)
+    user = context.message.author.mention   #sets user to the mention of the message author
+    user = re.sub("<|>|!|@", "", user)      #removes extraneous characters from user ID
 
-    player_rsn = get_rsn(user)
-    if player_rsn is None:
+    player_rsn = get_rsn(user)              #gets the rsn of the user
+    if player_rsn is None:                  #checks if player has not set RSN
         await client.say("I noticed you haven't yet set your RSN, you can do so by doing ::setrsn <name>.\n")
-        player_rsn='not_malnec'
 
-
-    if player_rsn.lower() == 'malnec':
+    elif player_rsn.lower() == 'malnec' or player_rsn.lower() == 'no wait nvm': #checks if messenger is Malnec or Ace
         possible_responses = [
             'Fuck yes',
             'Hell no',
-            "I don't like you"
+            "I don't like you",
+            'Can you like, ask someone else',
+            'Stop spamming me with questions',
+            'I mean kinda yeah',
+            'Please DONT do that',
+            'Why are you even asking just go p500',
+            'Just leave',
+            "Hold on I'm at the sand casino",
+            '8ball machine broke',
+            'Ask Darth',
+            'Ask your mother'
         ]
-        await client.say(random.choice(possible_responses) + ", " + context.message.author.mention)
-    else:
+        await client.say(random.choice(possible_responses) + ", " + context.message.author.mention) #picks a random option and sends it back to command user
+    elif player_rsn is not None:
         possible_responses = [
             'That is a resounding no',
             'It is not looking likely',
@@ -55,19 +63,19 @@ async def eight_ball(context):
             'Why are you even asking, its obviously a yes',
             'Just no'
         ]
-        await client.say(random.choice(possible_responses) + ", " + context.message.author.mention)
+        await client.say(random.choice(possible_responses) + ", " + context.message.author.mention) #picks a random option and sends it back to command user
 
 
 @client.event
 async def on_ready():
-    await client.change_presence(game=Game(name="Mein Craft"))
-    print("Logged in as " + client.user.name)
+    print("Logged in as " + client.user.name)   #prints to console that bot has connected
+    await client.change_presence(game=Game(name="RuneScape 3 Mobile"))  #sets game being played by bot
 
 
 @client.command(name='bitcoin',
                 brief='Finds the price of Bitcoin.')
 async def bitcoin():
-    url = 'https://api.coindesk.com/v1/bpi/currentprice/BTC.json'
+    url = 'https://api.coindesk.com/v1/bpi/currentprice/BTC.json'   #URL of bitcoin price tool
     async with aiohttp.ClientSession() as session:  # Async HTTP request
         raw_response = await session.get(url)
         response = await raw_response.text()
@@ -78,89 +86,94 @@ async def bitcoin():
 @client.command(name='square',
                 brief='Squares a number.')
 async def square(number):
-    squared_value = int(number) * int(number)
-    await client.say(str(number) + " squared is " + str(squared_value))
+    squared_value = int(number) * int(number)   #takes in a value and squares it
+    await client.say(str(number) + " squared is " + str(squared_value)) #prints result to user
 
 
 @client.command(name='setrsn',
                 brief='Associates your RSN with your Discord.',
                 pass_context=True)
 async def setrsn(context):
-    users = open('users.txt', 'r')
-    pairs = users.read()
-    users.close()
+    users = open('users.txt', 'r')  #opens user info storage file
+    pairs = users.read()            #reads in registered names
+    users.close()                   #closes file
 
-    name = context.message.content[9:]
-    user = context.message.author.mention
-    user = re.sub("<|>|!|@", "", user)
+    name = context.message.content[9:]      #parses RSN to be set from message
+    user = context.message.author.mention   #gets mention of user
+    user = re.sub("<|>|!|@", "", user)      #strips extraneous characters from user ID
 
-    rsn_available = check_rsn(pairs, name)
-    user_available = check_user(pairs, user)
+    rsn_available = check_rsn(pairs, name)  #checks if the RSN is claimed
+    user_available = check_user(pairs, user)#checks if the user has set their RSN
 
-    if rsn_available == 1:
+    if rsn_available == 1:                  #if the RSN has been claimed
         await client.say("The username " + name + " has been claimed. Please contact an Admin for help.")
-    if user_available == 1:
+    elif user_available == 1:               #if the user has claimed a name
         await client.say("You have already claimed a name. Please use ::updatersn <name>")
 
-    if rsn_available == user_available == 0:
-        aff = open('users.txt', 'a')
+    else:                                   #user hasn't claimed a name and name is not taken
+        aff = open('users.txt', 'a')        #opens user file as append
 
-        combo = user + ":" + name
-        aff.write(combo + "\n")
-        print(combo)
+        combo = user + ":" + name           #stores user ID and RSN combo as string
+        aff.write(combo + "\n")             #writes user ID and RSN combo to file
+        aff.close()                         #closes the user file
 
-        aff.close()
-        await client.say(context.message.author.mention + " has claimed the RSN " + name + ".")
+        await client.say(context.message.author.mention + " has claimed the RSN " + name + ".")     #responds to user letting them know their name has been set
 
 
 @client.command(name='updatersn',
                 brief='Updates your RSN if you have already set one.',
                 pass_context=True)
 async def updatersn(context):
-    users = open('users.txt', 'r')
-    all_users = users.read()
-    users.close()
-    name = context.message.content[12:]
-    pairs = all_users.split("\n")
+    users = open('users.txt', 'r')          #opens user file
+    all_users = users.read()                #reads in users
+    users.close()                           #closes user file
 
-    user = context.message.author.mention
-    user = re.sub("<|>|!|@", "", user)
+    name = context.message.content[12:]     #gets new RSN to be set from message
+    pairs = all_users.split("\n")           #splits users into array
 
-    if(check_rsn(pairs, name) == 0):
-        for idx, a in enumerate(pairs):
+    user = context.message.author.mention   #gets user mention of author
+    user = re.sub("<|>|!|@", "", user)      #removes extraneous characters from user ID
+
+
+    rsn_available = check_rsn(pairs, name)  #checks if the RSN is claimed
+    user_available = check_user(pairs, user)#checks if the user has set their RSN
+
+    if(rsn_available == 0 and user_available == 1):        #checks if RSN is taken
+        for idx, a in enumerate(pairs):     #runs through user list and modifies appropriate user
             if user in pairs[idx]:
                 pairs[idx] = user + ":" + name
 
-        rewrite_users = open('users.txt', 'w')
+        rewrite_users = open('users.txt', 'w')      #opens user list
         for idx, a in enumerate(pairs):
-            rewrite_users.write(pairs[idx] + "\n")
-        rewrite_users.close()
-        await client.say(context.message.author.mention + " has changed their RSN to " + name + ".")
-    else:
-        await client.say("The username " + name + " has been claimed. Please contact an Admin for help.")
-
+            rewrite_users.write(pairs[idx] + "\n")  #rewrites user list to file
+        rewrite_users.close()                       #closes user file
+        await client.say(context.message.author.mention + " has changed their RSN to " + name + ".")    #responds to user to let them know their name has been updated
+    elif rsn_available == 1:
+        await client.say("The username " + name + " has been claimed. Please contact an Admin for help.")   #lets user know requested RSN is claimed.
+    elif user_available == 0:
+        await client.say(context.message.author.mention + ", you have not claimed an RSN yet. Use ::setrsn <your RSN here> to claim your RSN.") #lets user know they have not claimed an RSN and need to set it
 
 @client.command(name='ticket',
                 brief='Sends a support ticket to Server Owner.',
                 pass_context=True)
 async def ticket(context):
-    await client.delete_message(context.message)
-    await client.send_message(context.message.author, "Ticket received!")
-    await client.send_message(context.message.channel.server.owner, "Ticket from " + context.message.author.mention + ":\n" + context.message.content[8:])
+    await client.delete_message(context.message)                            #removes message from chat in case of sensitive content
+    await client.send_message(context.message.author, "Ticket received!")   #messages author letting them know message was received
+    await client.send_message(context.message.channel.server.owner, "Ticket from " + context.message.author.mention + ":\n" + context.message.content[8:])  #sends ticket info to server owner
 
 
 @client.command(name='register',
                 brief='Gives permissions to new users.',
                 pass_context=True)
 async def register(context, key):
-    if key != 110:
+    if key != 110:                                              #checks to see if key is correct
         await client.say("Incorreect key. Please contact a server member for the key.")
     else:
-        client.delete_message(context.message)
-        user = context.message.author
-        verified_role = get(user.server.roles, name='Verified (RuneScape)')
-        client.add_role(user, verified_role)
-        await client.say("User verified!")
+        client.delete_message(context.message)                  #removes message so key is not made public
+        user = context.message.author                           #gets user from message
+        verified_role = get(user.server.roles, name='FIH Ally') #gets role to give user
+        client.add_role(user, verified_role)                    #adds role to user
+        await client.send_message(user, "User verified!")       #sends a message confirming they were verified
 
 
 
@@ -168,234 +181,259 @@ async def register(context, key):
                 brief='Reports that you capped at the citadel this week.',
                 pass_context=True)
 async def capped(context):
-    player_rsn=get_rsn(context.message.author.mention)
-    if player_rsn is None:
+    player_rsn=get_rsn(context.message.author.mention)              #gets RSN of player
+    if player_rsn is None:                                          #checks to see that RSN has been set
         await client.say("Hey " + context.message.author.mention + ", please set your rsn before using this command. You can set it by doing ::setrsn <name>.")
+        return                                                      #exits function
 
-    capped = open('capped.txt', 'r')
-    capped_list = capped.read()
-    capped.close()
+    capped = open('capped.txt', 'r')            #opens list of capped users
+    capped_list = capped.read()                 #reads in capped users
+    capped.close()                              #closes list
 
-    if player_rsn in capped_list:
+    if player_rsn in capped_list:               #checks if player has already capped
         await client.say("Hey " + player_rsn + ", you've already capped this week.")
         return
 
-    capped_write = open('capped.txt', 'a')
-    capped_write.write(player_rsn + '\n')
-    capped_write.close()
+    capped_write = open('capped.txt', 'a')      #opens capped list in append mode
+    capped_write.write(player_rsn + '\n')       #adds user to list
+    capped_write.close()                        #closes list
 
-    await client.say("Thanks for capping " + player_rsn + "!")
+    await client.say("Thanks for capping " + player_rsn + "!")  #thanks the player for capping
 
 
 @client.command(name='citadel_reset',
                 brief='Tells the bot that the citadel has reset. Prints users that capped last week.',
                 pass_context=True)
 async def citadel_reset(context):
-    user_roles = context.message.author.roles
-    for role in user_roles:
-        if '🗝️ FiH Leader' == role.name or '💙 I Fucking Love Cyan' == role.name:
-            capped_list = open('capped.txt', 'r')
-            capped_users = capped_list.read()
-            capped_list.close()
+    user_roles = context.message.author.roles                                       #gets roles of user who sent command
+    for role in user_roles:                                                             #loops through user roles
+        if '🗝️ FiH Leader' == role.name or '💙 I Fucking Love Cyan' == role.name:    #checks if user has role to use command
+            capped_list = open('capped.txt', 'r')           #opens capped list
+            capped_users = capped_list.read()               #gets users who capped
+            capped_list.close()                             #closes list
 
-            await client.say("Users that capped this week:\n" + capped_users)
+            await client.say("Users that capped this week:\n" + capped_users)   #sends title message and user list
 
-            clear_capped = open('capped.txt', 'w')
-            clear_capped.close()
-            return
+            clear_capped = open('capped.txt', 'w')      #clears list file
+            clear_capped.close()                        #closes list
+            return                                      #exits function
 
-    await client.say("You do not have permission to use this command.")
+    await client.say("You do not have permission to use this command.") #lets user know they don't have command permission
 
 
 @client.command(name='launch_santa',
                 brief='Gets list of secret santa users.',
                 pass_context=True)
 async def launch_santa(context):
-    user_roles = context.message.author.roles
-    for role in user_roles:
-        if '🗝️ FiH Leader' == role.name:
-            santa_file = open('secret_santa.txt', 'r')
-            participants = santa_file.read()
-            santa_file.close()
+    """
+    Quick note about Discord user mentions before you read this function:
+    Discord users all have a unique ID that can be used to mention them as if you were to @ their name.
+    I'll call this the user mention. It looks something like this: <@162606971705491458> or <@!179067358369939456>
+    Your user mention may or may not have an '!' as it's third character. This is dynamic as far as I know.
+    Because of this, user-rsn pairs are saved by the bot based on your ID number, not the extraneous symbols.
+    When creating SENDER_LIST, the bot looks up users based on their mention. There is a check in there that removes the
+    extra '!' if the user does not have one in their mention
+    """
 
-            participant_list = participants.split('\n')
-            participant_users = []
+    user_roles = context.message.author.roles       #gets user role list
+    for role in user_roles:                         #loops through user roles
+        if '🗝️ FiH Leader' == role.name:            #checks if user has role to use command
+            santa_file = open('secret_santa.txt', 'r')  #opens secret santa roster
+            participants = santa_file.read()            #reads in participant list (set of RSNs)
+            santa_file.close()                          #closes secret santa roster
 
-            for p in participant_list:
-                user = get_user(p)
-                if user is not None:
-                    participant_users.append(user)
+            participant_list = participants.split('\n') #splits participants into list
+            participant_users = []                      #creates user array
 
-            JAYCOLE = find(lambda m: m.mention == get_user("Jaycole"), context.message.channel.server.members)
-            if JAYCOLE is None:
-                j_user = get_user("Jaycole")
-                j_user = re.sub("!", "", j_user)
-                JAYCOLE = find(lambda m: m.mention == j_user, context.message.channel.server.members)
+            for p in participant_list:              #loops through participant list
+                user = get_user(p)                  #gets the user associated with given RSN
+                if user is not None:                #checks if RSN has been claimed by a user
+                    participant_users.append(user)  #adds user to participant list
+
+            JAYCOLE = find(lambda m: m.mention == get_user("Jaycole"), context.message.channel.server.members)  #stores info for me for testing purposes
+            if JAYCOLE is None:                     #check if it used the wrong mention
+                j_user = get_user("Jaycole")        #gets my user mention again
+                j_user = re.sub("!", "", j_user)    #removes ! from mention
+                JAYCOLE = find(lambda m: m.mention == j_user, context.message.channel.server.members)   #re-saves me
 
 
-            SENDER_LIST = []
+            SENDER_LIST = []    #initialize sender list, which will be an array of Members
+
             # Member is a subclass of User, member is a Member
             # participant_users is an array of mentions
-            for p in participant_users:
-                member = find(lambda m: m.mention == p, context.message.channel.server.members)
-                if member is None:
-                    p = re.sub("!", "", p)
-                    member = find(lambda m: m.mention == p, context.message.channel.server.members)
-                print(member)
-                SENDER_LIST.append(member)
 
-            users = open('secret_santa.txt', 'r')
-            receiver_list = users.read()
-            users.close()
+            for p in participant_users:                                                             #loop through participants
+                member = find(lambda m: m.mention == p, context.message.channel.server.members)     #find the person's User based on their mention
+                if member is None:                                                                  #checks if it used the wrong mention
+                    p = re.sub("!", "", p)                                                          #removes ! from mention
+                    member = find(lambda m: m.mention == p, context.message.channel.server.members) #re checks for User based on new mention
+                SENDER_LIST.append(member)                                                          #adds user to sender list
 
-            receivers = receiver_list.split('\n')
+            receivers = participant_list    #stores receivers as a pointer to participant list so I don't have to read in twice.
 
-            f = open("santa_log.txt", "w+")
+            f = open("santa_log.txt", "w+") #opens log file
 
             for user in SENDER_LIST:
-                #print (user.name + ": ")
-                print(receivers)
-                s = random.uniform(0, receivers.__len__())
-                s = round(s)
-                receiver = receivers[s - 1]
+                s = random.uniform(0, receivers.__len__())      #gets random value within list bounds
+                s = round(s)                                    #rounds random number to a usable index
+                receiver = receivers[s - 1]                     #gets receiver at that index
 
-                while receiver == get_rsn(user.mention) and receiver is not None:
+                while receiver == get_rsn(user.mention) and receiver is not None:   #redraws if user gets themself or an error
                     s = random.uniform(0, receivers.__len__())
                     s = round(s)
                     receiver = receivers[s - 1]
 
-                receivers.pop(s - 1)
-                try:
-                    await client.send_message(user, "Hey " + get_rsn(user.mention) + ", I'm sorry but my previous message was incorrect. Your secret santa target is " + receiver + "!")
-                except:
+                receivers.pop(s - 1)                            #removes receiver from list
+                try:                                            #tries to send target to user
+                    await client.send_message(user, "Hey " + get_rsn(user.mention) + ", Your secret santa target is " + receiver + "!")
+                except:                                         #catches if user private messages are set to private, sends target to me
                     await client.send_message(JAYCOLE, "Hey " + get_rsn(user.mention) + ", your secret santa target is " + receiver + "!")
 
-                #await client.send_message(JAYCOLE, "Hey " + get_rsn(user.mention) + ", your secret santa target is " + receiver + "!")
-                f.write((user.name + " got " + receiver + '\n'))
+                #await client.send_message(JAYCOLE, "Hey " + get_rsn(user.mention) + ", your secret santa target is " + receiver + "!") - test line to send all targets to me to test function
+                f.write((user.name + " got " + receiver + '\n'))        #writes matches to log
 
-                time.sleep(1)
+                time.sleep(1)                                           #waits one second to avoid overrunning action limits
 
-            f.close()
-            await client.say("Secret Santa targets have been sent out! Check your inbox for your person!")
+            f.close()                                                   #closes santa log
+            await client.say("Secret Santa targets have been sent out! Check your inbox for your person!")  #announces that santa targets have been sent.
 
 
 @client.command(name='hello',
                 brief='Says hello!',
                 pass_context=True)
 async def hello(context):
-    player_rsn = get_rsn(context.message.author.mention)
-    if player_rsn is None:
-        await client.say("Hello " + context.message.author.mention + "!")
+    player_rsn = get_rsn(context.message.author.mention)    #gets RSN of user
+    if player_rsn is None:  #checks if RSN has been set
+        await client.say("Hello " + context.message.author.mention + "!")   #says hello to user using their mention
     else:
-        await client.say("Hello " + player_rsn + "!")
+        await client.say("Hello " + player_rsn + "!")                       #says hello to user using their RSN
 
 
 @client.command(name='santa',
                 brief='Adds your name to the secret santa event',
                 pass_context=True)
 async def santa(context):
-    player_rsn = get_rsn(context.message.author.mention)
+    player_rsn = get_rsn(context.message.author.mention)        #gets RSN of command user
 
-    ss_entered = open('secret_santa.txt', 'r')
-    ss_entries = ss_entered.read()
-    ss_entered.close()
+    ss_entered = open('secret_santa.txt', 'r')                  #opens secret santa roster
+    ss_entries = ss_entered.read()                              #reads roster
+    ss_entered.close()                                          #closes roster
 
-    print(player_rsn)
-
-    if player_rsn is None:
+    if player_rsn is None:  #if RSN hasn't been set inform user
         await client.say("Hey " + context.message.author.mention + ", you have'nt set your RSN. \n"   
                                                                    "Please set it with ::setrsn <name>.")
-    else:
-        if player_rsn in ss_entries:
-            await client.say("You've already entered the Secret Santa event " + player_rsn + "!")
-            return
-        ss_list = open('secret_santa.txt', 'a')
-        ss_list.write(player_rsn + "\n")
-        ss_list.close()
-        await client.say(context.message.author.mention + " has joined the Secret Santa event!")
+        return
+    elif player_rsn in ss_entries:    #checks if user is already in secret santa
+        await client.say("You've already entered the Secret Santa event " + player_rsn + "!")
+        return
+
+    ss_list = open('secret_santa.txt', 'a')                     #opens secret santa roster in append mode
+    ss_list.write(player_rsn + "\n")                            #adds new user to roster
+    ss_list.close()                                             #closes roster
+    await client.say(context.message.author.mention + " has joined the Secret Santa event!")    #informs user that they have registered for Secret Santa
 
 
 @client.command(name='checkrsn',
                 brief='Check to see what your RSN is set to.',
                 pass_context=True)
 async def checkrsn(context):
-    player_rsn = get_rsn(context.message.author.mention)
+    player_rsn = get_rsn(context.message.author.mention)    #gets RSN of user
 
-    if player_rsn is None:
+    if player_rsn is None:                                  #checks if name is not set
         await client.say("You have not set your RSN yet " + context.message.author.mention)
-    else:
+    else:                                                   #prints saved RSN
         await client.say("Your RSN is set to " + player_rsn + ".")
 
 
 async def list_servers():
-    await client.wait_until_ready()
-    while not client.is_closed:
-        print("Current servers:")
+    await client.wait_until_ready()                         #waits for client to be ready
+    while not client.is_closed:                             #checks if client connection is open
+        print("Current servers:")                           #prints connected servers list to console
         for server in client.servers:
             print(server.name)
 
-        user_file = open('users.txt', 'r')
-        user_list = user_file.read()
-        user_file.close()
+        user_file = open('users.txt', 'r+')                 #opens user file
+        user_list = user_file.read()                        #reads in user list
 
-        users = user_list.split('\n')
-        rewrite_users = open('users.txt', 'w')
+        if ('<' or '>' or '!' or '@') in user_list:         #checks if extraneous symbols exist in user list
+            user_file.seek(0)                               #goes to start of file
+            user_file.truncate()                            #clears file
 
-        for user in users:
-            user = re.sub("<|>|!|@", "", user)
-            if user.__len__() > 3:
-                rewrite_users.write(user + '\n')
-                print(user)
+            user_list = re.sub("<|>|!|@", "", user_list)    #removes extraneous symbols from user IDs
+            user_file.write(user_list)                      #writes fixed list to file
 
-        rewrite_users.close()
+            print("User list cleaned.")
 
-        await asyncio.sleep(600)
+        user_file.close()                                   #closes user file
 
-
-def check_rsn(pairs, name):
-    if name in pairs:
-        return 1
-    return 0
+        await asyncio.sleep(600)                            #5 minute sleep
 
 
-def check_user(pairs, user):
-    if user in pairs:
-        return 1
-    return 0
+@client.command(name='get_mention',
+                brief='Mentions a user based on their RSN',
+                pass_context=True)
+async def get_mention(context):
+    user_roles = context.message.author.roles       #gets user role list
+    for role in user_roles:                         #loops through user roles
+        if '🗝️ FiH Leader' == role.name:            #checks if user has role to use command
+            name = context.message.content[14:]                                                  #retrieves RSN argument from command
+            await client.send_message(context.message.author.mention, '\\' + get_user(name))     #sends mention of requested user
+            return
 
 
-def get_rsn(user):
-    users = open('users.txt', 'r')
-    all_users = users.read()
-    users.close()
-
-    user = re.sub("<|>|!|@", "", user)
-
-    pairs = all_users.split("\n")
-
-    if check_user(pairs, user) == 0:
-        for idx, a in enumerate(pairs):
-            if user in pairs[idx]:
-                user_info=pairs[idx].split(':')
-                return user_info[1]
-    return None
+def check_rsn(pairs, name):     #takes user list and RSN
+    if name in pairs:           #checks if rsn exists in list of pairs
+        return 1                #returns true
+    return 0                    #else, returns false
 
 
-def get_user(rsn):
-    users = open('users.txt', 'r')
-    all_users = users.read()
-    users.close()
+def check_user(pairs, user):    #takes user list and user mention
+    if user in pairs:           #checks if user mention in list of pairs
+        return 1                #returns true
+    return 0                    #returns false
 
-    user_list = all_users.split('\n')
 
-    user = None
+def get_rsn(user):                                  #gets the RSN of a user
+    users = open('users.txt', 'r')                  #opens user file
+    all_users = users.read()                        #reads in user list
+    users.close()                                   #closes user file
 
-    for u in user_list:
-        if rsn in u:
-            user_split = u.split(':')
-            user_handle = user_split[0]
-            user_handle = "<@!" + user_handle + ">"
-            return user_handle
+    user = re.sub("<|>|!|@", "", user)              #removes extraneous characters from user ID
+
+    pairs = all_users.split("\n")                   #splits user list into individual users
+
+    if check_user(pairs, user) == 0:                #if user is in the list
+        for idx, a in enumerate(pairs):             #loop through list elements
+            if user in pairs[idx]:                  #checks if loop has reached correct element
+                user_info=pairs[idx].split(':')     #splits element into ID and RSN
+                return user_info[1]                 #returns RSN
+    return None                                     #returns None if RSN not set
+
+
+def get_user(context, rsn):                                      #gets user mention from RSN
+    rsn = rsn.lower()                                   #sets RSN to lowercase for easier checking
+    users = open('users.txt', 'r')                      #opens user list file
+    all_users = users.read()                            #reads in user list
+    users.close()                                       #closer user list file
+
+    user_list = all_users.split('\n')                   #splits all users into individual user ID:RSN combos
+
+    for u in user_list:                                 #loops through user list
+        u = u.lower()                                   #sets RSN to lowercase
+        if rsn in u:                                    #checks if target RSN belongs to current element
+            user_split = u.split(':')                   #splits element into ID and RSN
+            user_handle = user_split[0]                 #takes user ID from user info
+            user_handle = "<@!" + user_handle + ">"     #adds extraneous characters to handle
+
+            user = find(lambda m: m.mention == user_handle, context.message.channel.server.members)         #stores info for me for testing purposes
+            if user is None:                                                                                #check if it used the wrong mention
+                user_handle = re.sub("!", "", user_handle)                                                  #removes ! from mention
+                user = find(lambda m: m.mention == user_handle, context.message.channel.server.members)     #re saves user
+
+            if user is not None:
+                return user_handle
+            else:
+                return None
 
 
 
