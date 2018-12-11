@@ -1,5 +1,3 @@
-# Work with Python 3.6
-import random
 import asyncio
 import aiohttp
 import json
@@ -7,10 +5,13 @@ from discord import Game
 from discord.ext.commands import Bot
 from discord.utils import get
 from discord.utils import find
-import datetime
 import re
 import random
 import time
+import schedule
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
 BOT_PREFIX = ("::")
 token_file = open('token.txt', 'r')
 TOKEN = token_file.read()# Get at discordapp.com/developers/applications/me
@@ -183,7 +184,8 @@ async def register(context, key):
 async def capped(context):
     player_rsn=get_rsn(context.message.author.mention)              #gets RSN of player
     if player_rsn is None:                                          #checks to see that RSN has been set
-        await client.say("Hey " + context.message.author.mention + ", please set your rsn before using this command. You can set it by doing ::setrsn <name>.")
+        await client.say("Hey " + context.message.author.mention + ", please set your rsn before using this command. "
+                                                                   "You can set it by doing ::setrsn <name>.")
         return                                                      #exits function
 
     capped = open('capped.txt', 'r')            #opens list of capped users
@@ -194,6 +196,21 @@ async def capped(context):
         await client.say("Hey " + player_rsn + ", you've already capped this week.")
         return
 
+    scope = ['https://spreadsheets.google.com/feeds',
+             'https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+
+    try:    #creates client and opens rank spreadsheet
+        g_client = gspread.authorize(creds)
+        sheet = g_client.open("RuneScape Clan Ranks by Points").get_worksheet(1)
+    except:
+        print ("Client operation failed.")
+        return
+
+    # updates user points
+    row = sheet.find(player_rsn).row
+    sheet.update_cell(row, 7, int(sheet.cell(row, 7).value) + 5)
+
     capped_write = open('capped.txt', 'a')      #opens capped list in append mode
     capped_write.write(player_rsn + '\n')       #adds user to list
     capped_write.close()                        #closes list
@@ -201,24 +218,14 @@ async def capped(context):
     await client.say("Thanks for capping " + player_rsn + "!")  #thanks the player for capping
 
 
-@client.command(name='citadel_reset',
-                brief='Tells the bot that the citadel has reset. Prints users that capped last week.',
-                pass_context=True)
-async def citadel_reset(context):
-    user_roles = context.message.author.roles                                       #gets roles of user who sent command
-    for role in user_roles:                                                             #loops through user roles
-        if '🗝️ FiH Leader' == role.name or '💙 I Fucking Love Cyan' == role.name:    #checks if user has role to use command
-            capped_list = open('capped.txt', 'r')           #opens capped list
-            capped_users = capped_list.read()               #gets users who capped
-            capped_list.close()                             #closes list
+def citadel_reset():
+    capped_list = open('capped.txt', 'r')           #opens capped list
+    capped_users = capped_list.read()               #gets users who capped
+    capped_list.close()                             #closes list
 
-            await client.say("Users that capped this week:\n" + capped_users)   #sends title message and user list
-
-            clear_capped = open('capped.txt', 'w')      #clears list file
-            clear_capped.close()                        #closes list
-            return                                      #exits function
-
-    await client.say("You do not have permission to use this command.") #lets user know they don't have command permission
+    clear_capped = open('capped.txt', 'w')      #clears list file
+    #write next build tick time
+    clear_capped.close()                        #closes list
 
 
 @client.command(name='launch_santa',
@@ -410,7 +417,7 @@ def get_rsn(user):                                  #gets the RSN of a user
     return None                                     #returns None if RSN not set
 
 
-def get_user(context, rsn):                                      #gets user mention from RSN
+def get_user(context, rsn):                             #gets user mention from RSN
     rsn = rsn.lower()                                   #sets RSN to lowercase for easier checking
     users = open('users.txt', 'r')                      #opens user list file
     all_users = users.read()                            #reads in user list
@@ -435,7 +442,6 @@ def get_user(context, rsn):                                      #gets user ment
             else:
                 return None
 
-
-
+schedule.every().monday.at('00:54').do(citadel_reset)
 client.loop.create_task(list_servers())
 client.run(TOKEN)
