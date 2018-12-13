@@ -49,7 +49,8 @@ async def eight_ball(context):
             "Hold on I'm at the sand casino",
             '8ball machine broke',
             'Ask Darth',
-            'Ask your mother'
+            'Ask your mother',
+            'Question too complicated to be answered using free engine. '
         ]
         await client.say(random.choice(possible_responses) + ", " + context.message.author.mention) #picks a random option and sends it back to command user
     elif player_rsn is not None:
@@ -207,9 +208,15 @@ async def capped(context):
         print ("Client operation failed.")
         return
 
-    # updates user points
-    row = sheet.find(player_rsn).row
-    sheet.update_cell(row, 7, int(sheet.cell(row, 7).value) + 5)
+    try:    # updates user points
+        row = sheet.find(player_rsn).row
+        sheet.update_cell(row, 7, int(sheet.cell(row, 7).value) + 5)
+    except:
+        print("User not found in sheet, appending...")
+        sheet.add_rows([player_rsn])
+        row = sheet.find(player_rsn).row
+        sheet.update_cell(row, 7, int(sheet.cell(row, 7).value) + 5)
+
 
     capped_write = open('capped.txt', 'a')      #opens capped list in append mode
     capped_write.write(player_rsn + '\n')       #adds user to list
@@ -362,12 +369,38 @@ async def list_servers():
         user_file = open('users.txt', 'r+')                 #opens user file
         user_list = user_file.read()                        #reads in user list
 
-        if ('<' or '>' or '!' or '@') in user_list:         #checks if extraneous symbols exist in user list
-            user_file.seek(0)                               #goes to start of file
-            user_file.truncate()                            #clears file
+        user_list_updated=False
 
+        if ('<' or '>' or '!' or '@') in user_list:         #checks if extraneous symbols exist in user list                          #clears file
             user_list = re.sub("<|>|!|@", "", user_list)    #removes extraneous symbols from user IDs
-            user_file.write(user_list)                      #writes fixed list to file
+            user_list_updated=True
+
+        individuals = user_list.split('\n')
+        header = "Sample User:\n111111111111111111:xxxxxxxxxxxx\n"
+
+        for idx, a in enumerate(individuals):
+            if individuals[idx].__len__() > header.split('\n')[1].__len__():
+                print(individuals[idx])
+                split_info = individuals[idx].split(':')
+                first_user_ID = split_info[0]
+                first_user_name = split_info[1][:(split_info[1].__len__() - 18)]
+                second_user_ID = split_info[1][-18:]
+                second_user_name = split_info[2]
+
+                individuals[idx] = (first_user_ID + ":" + first_user_name)
+                individuals.append(second_user_ID + ":" + second_user_name)
+
+                user_list_updated = True
+
+        if(user_list_updated):
+            user_file.seek(0)                               #goes to start of file
+            user_file.truncate()
+
+            if header not in user_list:
+                user_file.write(header)
+
+            for i in individuals:
+                user_file.write(i + "\n")                     #writes fixed list to file
 
             print("User list cleaned.")
 
