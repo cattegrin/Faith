@@ -1,3 +1,6 @@
+'''
+IMPORT STATEMENTS
+'''
 import asyncio
 import aiohttp
 import json
@@ -9,17 +12,27 @@ import re
 import random
 import time
 import schedule
+import sys
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
+'''
+GLOBAL VARIABLES
+'''
 BOT_PREFIX = ("::")
 token_file = open('token.txt', 'r')
-TOKEN = token_file.read()# Get at discordapp.com/developers/applications/me
+TOKEN = token_file.read()   #Get at discordapp.com/developers/applications/me
 token_file.close()
 
 client = Bot(command_prefix=BOT_PREFIX)
 
-ss_season = True
+ss_season = False
+
+
+
+'''
+General Commands
+'''
 
 
 @client.command(name='8ball',
@@ -49,8 +62,7 @@ async def eight_ball(context):
             "Hold on I'm at the sand casino",
             '8ball machine broke',
             'Ask Darth',
-            'Ask your mother',
-            'Question too complicated to be answered using free engine. '
+            'Ask your mother'
         ]
         await client.say(random.choice(possible_responses) + ", " + context.message.author.mention) #picks a random option and sends it back to command user
     elif player_rsn is not None:
@@ -66,12 +78,6 @@ async def eight_ball(context):
             'Just no'
         ]
         await client.say(random.choice(possible_responses) + ", " + context.message.author.mention) #picks a random option and sends it back to command user
-
-
-@client.event
-async def on_ready():
-    print("Logged in as " + client.user.name)   #prints to console that bot has connected
-    await client.change_presence(game=Game(name="RuneScape 3 Mobile"))  #sets game being played by bot
 
 
 @client.command(name='bitcoin',
@@ -92,26 +98,39 @@ async def square(number):
     await client.say(str(number) + " squared is " + str(squared_value)) #prints result to user
 
 
+@client.command(name='hello',
+                brief='Says hello!',
+                pass_context=True)
+async def hello(context):
+    player_rsn = get_rsn(context.message.author.mention)    #gets RSN of user
+    if player_rsn is None:  #checks if RSN has been set
+        await client.say("Hello " + context.message.author.mention + "!")   #says hello to user using their mention
+    else:
+        await client.say("Hello " + player_rsn + "!")                       #says hello to user using their RSN
+
+
+'''
+RSN: Set, Update, Check, and Utilities
+'''
+
+
 @client.command(name='setrsn',
                 brief='Associates your RSN with your Discord.',
                 pass_context=True)
 async def setrsn(context):
-    users = open('users.txt', 'r')  #opens user info storage file
-    pairs = users.read()            #reads in registered names
-    users.close()                   #closes file
+    message = context.message.content
+    if len(message) < 10:
+        await client.say("Usage: ::updatersn <new name>")
+        return
 
-    name = context.message.content[9:]      #parses RSN to be set from message
+    name = message[9:]      #parses RSN to be set from message
     user = context.message.author.mention   #gets mention of user
     user = re.sub("<|>|!|@", "", user)      #strips extraneous characters from user ID
 
-    rsn_available = check_rsn(pairs, name)  #checks if the RSN is claimed
-    user_available = check_user(pairs, user)#checks if the user has set their RSN
-
-    if rsn_available == 1:                  #if the RSN has been claimed
+    if get_user(context, name) is not None:                  #if the RSN has been claimed
         await client.say("The username " + name + " has been claimed. Please contact an Admin for help.")
-    elif user_available == 1:               #if the user has claimed a name
+    elif get_rsn(user) is not None:               #if the user has claimed a name
         await client.say("You have already claimed a name. Please use ::updatersn <name>")
-
     else:                                   #user hasn't claimed a name and name is not taken
         aff = open('users.txt', 'a')        #opens user file as append
 
@@ -126,21 +145,25 @@ async def setrsn(context):
                 brief='Updates your RSN if you have already set one.',
                 pass_context=True)
 async def updatersn(context):
+    message = context.message.content
+    if (len(message) < 13):
+        await client.say("Usage: ::updatersn <new name>")
+        return
+
     users = open('users.txt', 'r')          #opens user file
     all_users = users.read()                #reads in users
     users.close()                           #closes user file
 
-    name = context.message.content[12:]     #gets new RSN to be set from message
+    name = message[12:]     #gets new RSN to be set from message
     pairs = all_users.split("\n")           #splits users into array
 
     user = context.message.author.mention   #gets user mention of author
-    user = re.sub("<|>|!|@", "", user)      #removes extraneous characters from user ID
+    user = re.sub("<|>|!|@", "", user)
 
-
-    rsn_available = check_rsn(pairs, name)  #checks if the RSN is claimed
-    user_available = check_user(pairs, user)#checks if the user has set their RSN
-
-    if(rsn_available == 0 and user_available == 1):        #checks if RSN is taken
+    if get_rsn(user) is None:
+        await client.say("Hey " + context.message.author.mention + ", you haven't set your RSN yet."
+                                                                   "You can set it with ::setrsn <name>")
+    elif get_user(context, name) is None:        #checks if RSN is taken
         for idx, a in enumerate(pairs):     #runs through user list and modifies appropriate user
             if user in pairs[idx]:
                 pairs[idx] = user + ":" + name
@@ -150,18 +173,67 @@ async def updatersn(context):
             rewrite_users.write(pairs[idx] + "\n")  #rewrites user list to file
         rewrite_users.close()                       #closes user file
         await client.say(context.message.author.mention + " has changed their RSN to " + name + ".")    #responds to user to let them know their name has been updated
-    elif rsn_available == 1:
+    elif get_user(context, name) == user:
+        await client.say("You have already claimed the name " + name + ".")
+    elif get_user(context, name) is not None:
         await client.say("The username " + name + " has been claimed. Please contact an Admin for help.")   #lets user know requested RSN is claimed.
-    elif user_available == 0:
-        await client.say(context.message.author.mention + ", you have not claimed an RSN yet. Use ::setrsn <your RSN here> to claim your RSN.") #lets user know they have not claimed an RSN and need to set it
 
-@client.command(name='ticket',
-                brief='Sends a support ticket to Server Owner.',
+
+@client.command(name='checkrsn',
+                brief='Check to see what your RSN is set to.',
                 pass_context=True)
-async def ticket(context):
-    await client.delete_message(context.message)                            #removes message from chat in case of sensitive content
-    await client.send_message(context.message.author, "Ticket received!")   #messages author letting them know message was received
-    await client.send_message(context.message.channel.server.owner, "Ticket from " + context.message.author.mention + ":\n" + context.message.content[8:])  #sends ticket info to server owner
+async def checkrsn(context):
+    player_rsn = get_rsn(context.message.author.mention)    #gets RSN of user
+
+    if player_rsn is None:                                  #checks if name is not set
+        await client.say("You have not set your RSN yet " + context.message.author.mention)
+    else:                                                   #prints saved RSN
+        await client.say("Your RSN is set to " + player_rsn + ".")
+
+
+def get_rsn(user):                                  #gets the RSN of a user
+    users = open('users.txt', 'r')                  #opens user file
+    all_users = users.read()                        #reads in user list
+    users.close()                                   #closes user file
+
+    user = re.sub("<|>|!|@", "", user)              #removes extraneous characters from user ID
+
+    pairs = all_users.split("\n")                   #splits user list into individual users
+
+    for idx, a in enumerate(pairs):             #loop through list elements
+        if user in pairs[idx]:                  #checks if loop has reached correct element
+            user_info=pairs[idx].split(':')     #splits element into ID and RSN
+            return user_info[1]                 #returns RSN
+    return None                                     #returns None if RSN not set
+
+
+def get_user(context, rsn):                             #gets user mention from RSN
+    users = open('users.txt', 'r')                      #opens user list file
+    all_users = users.read()                            #reads in user list
+    users.close()                                       #closer user list file
+
+    user_list = all_users.split('\n')                   #splits all users into individual user ID:RSN combos
+
+    for u in user_list:                                 #loops through user list
+        if rsn in u:                                    #checks if target RSN belongs to current element
+            user_split = u.split(':')                   #splits element into ID and RSN
+            user_handle = user_split[0]                 #takes user ID from user info
+            user_handle = "<@!" + user_handle + ">"     #adds extraneous characters to handle
+
+            user = find(lambda m: m.mention == user_handle, context.message.channel.server.members)         #stores info for me for testing purposes
+            if user is None:                                                                                #check if it used the wrong mention
+                user_handle = re.sub("!", "", user_handle)                                                  #removes ! from mention
+                user = find(lambda m: m.mention == user_handle, context.message.channel.server.members)     #re saves user
+
+            if user is not None:
+                return user_handle
+            else:
+                return None
+
+
+'''
+Server Utilities: Register, Ticket, Get Mention, Bedtime, on_ready, status
+'''
 
 
 @client.command(name='register',
@@ -177,6 +249,72 @@ async def register(context, key):
         client.add_role(user, verified_role)                    #adds role to user
         await client.send_message(user, "User verified!")       #sends a message confirming they were verified
 
+
+@client.command(name='ticket',
+                brief='Sends a support ticket to Server Owner.',
+                pass_context=True)
+async def ticket(context):
+    await client.delete_message(context.message)                            #removes message from chat in case of sensitive content
+    await client.send_message(context.message.author, "Ticket received!")   #messages author letting them know message was received
+    await client.send_message(context.message.channel.server.owner, "Ticket from " + context.message.author.mention + ":\n" + context.message.content[8:])  #sends ticket info to server owner
+
+
+@client.command(name='get_mention',
+                brief='Mentions a user based on their RSN',
+                pass_context=True)
+async def get_mention(context):
+    user_roles = context.message.author.roles       #gets user role list
+    for role in user_roles:                         #loops through user roles
+        if '🗝️ FiH Leader' == role.name:            #checks if user has role to use command
+            name = context.message.content[14:]                                                  #retrieves RSN argument from command
+            await client.send_message(context.message.author.mention, '\\' + get_user(name))     #sends mention of requested user
+            return
+
+
+@client.event
+async def on_ready():
+    print("Logged in as " + client.user.name)   #prints to console that bot has connected
+    await client.change_presence(game=Game(name="RuneScape 3 Mobile"))  #sets game being played by bot
+
+
+async def list_servers():
+    await client.wait_until_ready()                         #waits for client to be ready
+    while not client.is_closed:                             #checks if client connection is open
+        print("Current servers:")                           #prints connected servers list to console
+        for server in client.servers:
+            print(server.name)
+
+        user_file = open('users.txt', 'r+')                 #opens user file
+        user_list = user_file.read()                        #reads in user list
+
+        if ('<' or '>' or '!' or '@') in user_list:         #checks if extraneous symbols exist in user list
+            user_file.seek(0)                               #goes to start of file
+            user_file.truncate()                            #clears file
+
+            user_list = re.sub("<|>|!|@", "", user_list)    #removes extraneous symbols from user IDs
+            user_list = re.sub("\n\n", "\n", user_list)
+            user_file.write(user_list)                      #writes fixed list to file
+
+            print("User list cleaned.")
+
+        user_file.close()                                   #closes user file
+
+        await asyncio.sleep(600)                            #5 minute sleep
+
+
+@client.command(name='bedtime',
+                brief='Puts Faith to sleep.',
+                pass_context=True)
+async def bedtime(context):
+    user_roles = context.message.author.roles       #gets user role list
+    for role in user_roles:                         #loops through user roles
+        if '🗝️ FiH Leader' == role.name:
+            sys.exit()
+
+
+'''
+Citadel: Capped, Reset
+'''
 
 
 @client.command(name='capped',
@@ -204,25 +342,21 @@ async def capped(context):
     try:    #creates client and opens rank spreadsheet
         g_client = gspread.authorize(creds)
         sheet = g_client.open("RuneScape Clan Ranks by Points").get_worksheet(1)
+
+        # updates user points
+        row = sheet.find(player_rsn).row
+        sheet.update_cell(row, 7, int(sheet.cell(row, 7).value) + 5)
+
+        capped_write = open('capped.txt', 'a')  # opens capped list in append mode
+        capped_write.write(player_rsn + '\n')  # adds user to list
+        capped_write.close()  # closes list
+
+        await client.say("Thanks for capping " + player_rsn + "!")  # thanks the player for capping
     except:
-        print ("Client operation failed.")
+        print("Client operation failed.")
+
+        await client.say("Hey " + get_rsn(context.message.author.mention) + ", there was an error adding your points to the spreadsheet. Please check that the name you set with ::setrsn matches your actual RSN (CaSe SeNSiTiVE")
         return
-
-    try:    # updates user points
-        row = sheet.find(player_rsn).row
-        sheet.update_cell(row, 7, int(sheet.cell(row, 7).value) + 5)
-    except:
-        print("User not found in sheet, appending...")
-        sheet.add_rows([player_rsn])
-        row = sheet.find(player_rsn).row
-        sheet.update_cell(row, 7, int(sheet.cell(row, 7).value) + 5)
-
-
-    capped_write = open('capped.txt', 'a')      #opens capped list in append mode
-    capped_write.write(player_rsn + '\n')       #adds user to list
-    capped_write.close()                        #closes list
-
-    await client.say("Thanks for capping " + player_rsn + "!")  #thanks the player for capping
 
 
 def citadel_reset():
@@ -233,6 +367,27 @@ def citadel_reset():
     clear_capped = open('capped.txt', 'w')      #clears list file
     #write next build tick time
     clear_capped.close()                        #closes list
+
+
+@client.command(name='citadel_manual_reset',
+                brief='Admin command to manually reset capped log.',
+                pass_context=True)
+async def citadel_manual_reset(context):
+    user_roles = context.message.author.roles       #gets user role list
+    for role in user_roles:                         #loops through user roles
+        if '🗝️ FiH Leader' == role.name:
+            capped_list = open('capped.txt', 'r')  # opens capped list
+            capped_users = capped_list.read()  # gets users who capped
+            capped_list.close()  # closes list
+
+            clear_capped = open('capped.txt', 'w')  # clears list file
+            # write next build tick time
+            clear_capped.close()  # closes list
+
+
+'''
+Secret Santa: Join and Launch
+'''
 
 
 @client.command(name='launch_santa',
@@ -312,17 +467,6 @@ async def launch_santa(context):
             await client.say("Secret Santa targets have been sent out! Check your inbox for your person!")  #announces that santa targets have been sent.
 
 
-@client.command(name='hello',
-                brief='Says hello!',
-                pass_context=True)
-async def hello(context):
-    player_rsn = get_rsn(context.message.author.mention)    #gets RSN of user
-    if player_rsn is None:  #checks if RSN has been set
-        await client.say("Hello " + context.message.author.mention + "!")   #says hello to user using their mention
-    else:
-        await client.say("Hello " + player_rsn + "!")                       #says hello to user using their RSN
-
-
 @client.command(name='santa',
                 brief='Adds your name to the secret santa event',
                 pass_context=True)
@@ -346,134 +490,6 @@ async def santa(context):
     ss_list.close()                                             #closes roster
     await client.say(context.message.author.mention + " has joined the Secret Santa event!")    #informs user that they have registered for Secret Santa
 
-
-@client.command(name='checkrsn',
-                brief='Check to see what your RSN is set to.',
-                pass_context=True)
-async def checkrsn(context):
-    player_rsn = get_rsn(context.message.author.mention)    #gets RSN of user
-
-    if player_rsn is None:                                  #checks if name is not set
-        await client.say("You have not set your RSN yet " + context.message.author.mention)
-    else:                                                   #prints saved RSN
-        await client.say("Your RSN is set to " + player_rsn + ".")
-
-
-async def list_servers():
-    await client.wait_until_ready()                         #waits for client to be ready
-    while not client.is_closed:                             #checks if client connection is open
-        print("Current servers:")                           #prints connected servers list to console
-        for server in client.servers:
-            print(server.name)
-
-        user_file = open('users.txt', 'r+')                 #opens user file
-        user_list = user_file.read()                        #reads in user list
-
-        user_list_updated=False
-
-        if ('<' or '>' or '!' or '@') in user_list:         #checks if extraneous symbols exist in user list                          #clears file
-            user_list = re.sub("<|>|!|@", "", user_list)    #removes extraneous symbols from user IDs
-            user_list_updated=True
-
-        individuals = user_list.split('\n')
-        header = "Sample User:\n111111111111111111:xxxxxxxxxxxx\n"
-
-        for idx, a in enumerate(individuals):
-            if individuals[idx].__len__() > header.split('\n')[1].__len__():
-                print(individuals[idx])
-                split_info = individuals[idx].split(':')
-                first_user_ID = split_info[0]
-                first_user_name = split_info[1][:(split_info[1].__len__() - 18)]
-                second_user_ID = split_info[1][-18:]
-                second_user_name = split_info[2]
-
-                individuals[idx] = (first_user_ID + ":" + first_user_name)
-                individuals.append(second_user_ID + ":" + second_user_name)
-
-                user_list_updated = True
-
-        if(user_list_updated):
-            user_file.seek(0)                               #goes to start of file
-            user_file.truncate()
-
-            if header not in user_list:
-                user_file.write(header)
-
-            for i in individuals:
-                user_file.write(i + "\n")                     #writes fixed list to file
-
-            print("User list cleaned.")
-
-        user_file.close()                                   #closes user file
-
-        await asyncio.sleep(600)                            #5 minute sleep
-
-
-@client.command(name='get_mention',
-                brief='Mentions a user based on their RSN',
-                pass_context=True)
-async def get_mention(context):
-    user_roles = context.message.author.roles       #gets user role list
-    for role in user_roles:                         #loops through user roles
-        if '🗝️ FiH Leader' == role.name:            #checks if user has role to use command
-            name = context.message.content[14:]                                                  #retrieves RSN argument from command
-            await client.send_message(context.message.author.mention, '\\' + get_user(name))     #sends mention of requested user
-            return
-
-
-def check_rsn(pairs, name):     #takes user list and RSN
-    if name in pairs:           #checks if rsn exists in list of pairs
-        return 1                #returns true
-    return 0                    #else, returns false
-
-
-def check_user(pairs, user):    #takes user list and user mention
-    if user in pairs:           #checks if user mention in list of pairs
-        return 1                #returns true
-    return 0                    #returns false
-
-
-def get_rsn(user):                                  #gets the RSN of a user
-    users = open('users.txt', 'r')                  #opens user file
-    all_users = users.read()                        #reads in user list
-    users.close()                                   #closes user file
-
-    user = re.sub("<|>|!|@", "", user)              #removes extraneous characters from user ID
-
-    pairs = all_users.split("\n")                   #splits user list into individual users
-
-    if check_user(pairs, user) == 0:                #if user is in the list
-        for idx, a in enumerate(pairs):             #loop through list elements
-            if user in pairs[idx]:                  #checks if loop has reached correct element
-                user_info=pairs[idx].split(':')     #splits element into ID and RSN
-                return user_info[1]                 #returns RSN
-    return None                                     #returns None if RSN not set
-
-
-def get_user(context, rsn):                             #gets user mention from RSN
-    rsn = rsn.lower()                                   #sets RSN to lowercase for easier checking
-    users = open('users.txt', 'r')                      #opens user list file
-    all_users = users.read()                            #reads in user list
-    users.close()                                       #closer user list file
-
-    user_list = all_users.split('\n')                   #splits all users into individual user ID:RSN combos
-
-    for u in user_list:                                 #loops through user list
-        u = u.lower()                                   #sets RSN to lowercase
-        if rsn in u:                                    #checks if target RSN belongs to current element
-            user_split = u.split(':')                   #splits element into ID and RSN
-            user_handle = user_split[0]                 #takes user ID from user info
-            user_handle = "<@!" + user_handle + ">"     #adds extraneous characters to handle
-
-            user = find(lambda m: m.mention == user_handle, context.message.channel.server.members)         #stores info for me for testing purposes
-            if user is None:                                                                                #check if it used the wrong mention
-                user_handle = re.sub("!", "", user_handle)                                                  #removes ! from mention
-                user = find(lambda m: m.mention == user_handle, context.message.channel.server.members)     #re saves user
-
-            if user is not None:
-                return user_handle
-            else:
-                return None
 
 schedule.every().monday.at('00:54').do(citadel_reset)
 client.loop.create_task(list_servers())
