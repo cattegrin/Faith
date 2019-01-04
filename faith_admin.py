@@ -1,10 +1,6 @@
 from discord.ext import commands
-from discord import Game
 from discord.utils import get
-from discord.utils import find
-from faith_user import get_user
-import asyncio
-import re
+from faith_utilities import get_user
 import sys
 
 

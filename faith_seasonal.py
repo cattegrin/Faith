@@ -1,8 +1,8 @@
 from discord.ext import commands
 from discord.utils import find
 from discord.utils import get
-from faith_user import get_user
-from faith_user import get_rsn
+from faith_utilities import get_user
+from faith_utilities import get_rsn
 import random
 import time
 import re

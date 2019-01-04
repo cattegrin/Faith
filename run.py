@@ -16,6 +16,7 @@ client.load_extension('faith_general')
 client.load_extension('faith_user')
 client.load_extension('faith_citadel')
 client.load_extension('faith_seasonal')
+client.load_extension('faith_alog')
 
 
 @client.event
