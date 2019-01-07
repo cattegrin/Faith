@@ -7,7 +7,6 @@ from faith_utilities import say
 from faith_utilities import tail
 from discord.ext import commands
 
-
 class Alog:
     def __init__(self, client):
         self.client = client
@@ -27,6 +26,11 @@ class Alog:
 
         args = argv.split(' ')
         rsn = get_rsn(context.message.author.mention)
+
+        if rsn is None:
+            await self.client.say("Hey " + context.message.author.mention + ", you haven't set your RSN yet. Set it with ::setrsn")
+            return
+
         if args[0] == 'activate':
             user_tracking = active_tracking(rsn)
             if user_tracking is True:
@@ -35,9 +39,14 @@ class Alog:
                 await self.client.say("I'm already keeping track of your adventurer log " + rsn)
         elif args[0] == 'track':
             track(self.client, rsn)
+        elif args[0] == 'drops':
+            print("Getting drops for " + rsn)
+            await self.client.say(pull_drops(rsn))
+        else:
+            await self.client.say("Command not recognized.")
 
 def track(client, rsn):
-    tracking_roster = open(os.path.join(sys.path[0], "alogs/roster.txt"), "a")
+    tracking_roster = open(os.path.join(sys.path[0], "alogs/roster.txt"), "r")
     roster = tracking_roster.read()
     tracking_roster.close()
 
@@ -47,6 +56,10 @@ def track(client, rsn):
     else:
         say(client, "Your adventures are not currently being tracked. Please enable tracking by doing ::alog activate")
 
+def pull_drops(rsn):
+    drop_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "drop_log" + ".txt"), "r")
+    drops = drop_log.read()
+    return("```------Drop List for " + rsn + '------\n' + drops + "---------------------------------```")
 
 def active_tracking(rsn):
     tracking_roster = open(os.path.join(sys.path[0], "alogs/roster.txt"), "r")
@@ -67,32 +80,56 @@ def active_tracking(rsn):
         xp_log.close()
 
         track_user(rsn)
+
+        LOGGING_FILE = open("alog_beta_log.txt", 'a')
+        LOGGING_FILE.write('--------------------------------------------------------------------------\n'
+                           'END OF LOG UPDATES\n'
+                           '--------------------------------------------------------------------------\n')
+        LOGGING_FILE.close()
+
         return True
     else:
         return False
 
 
 def track_user(rsn):
+        LOGGING_FILE = open("alog_beta_log.txt", 'a')
+
+        LOGGING_FILE.write("-----------------------------------------------------------\n")
+        LOGGING_FILE.write("User Being Tracked: " + rsn + "\n")
+        rsn_append = ''
+        rsn_split = []
 
         if ' ' in rsn:
             rsn_split = rsn.split(" ")
-            rsn_append = ''
 
             for substr in rsn_split:
                 rsn_append += substr + '%20'
+            rsn_append = rsn_append[:-3]
         else:
             rsn_append = rsn
 
         user_page = 'http://services.runescape.com/m=adventurers-log/c=tB0ermS1flc/rssfeed?searchName=' + rsn_append
-        rss_feed = urllib.request.urlopen(user_page)
-        data = rss_feed.read()
-        rss_feed.close()
+        LOGGING_FILE.write("User URL: " + user_page + '\n')
 
-        data = xmltodict.parse(data)
+        try:
+            rss_feed = urllib.request.urlopen(user_page)
+            data = rss_feed.read()
+            rss_feed.close()
 
-        data_table = data['rss']['channel']
+            data = xmltodict.parse(data)
 
-        events = data_table['item']
+            data_table = data['rss']['channel']
+
+            events = data_table['item']
+        except urllib.error.HTTPError:
+            LOGGING_FILE.write("ERROR: HTTP Error: User page not found.\n")
+            LOGGING_FILE.write("RSN: " + rsn + "\n")
+            LOGGING_FILE.write("RSN Split: " + str(rsn_split) + '\n')
+            LOGGING_FILE.write("RSN Append: " + rsn_append + '\n')
+            LOGGING_FILE.write("-----------------------------------------------------------\n\n\n")
+            return
+
 
         try:
             user_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "adv_log" + ".txt"), "a")
@@ -106,7 +143,9 @@ def track_user(rsn):
                 xp_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "xp_log" + ".txt"), "r+")
                 check_user_file = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "adv_log" + ".txt"), "r")
             except OSError:
-                print("Creation of the directory failed")
+                LOGGING_FILE.write("Creation of the directory failed\n")
+                LOGGING_FILE.write("-----------------------------------------------------------\n\n\n")
+                return
 
         try:
             drop_list = drop_log.read()
@@ -116,12 +155,18 @@ def track_user(rsn):
             xp_info = xp_log.read()
             xp_log.close()
         except NameError:
-            print("Name Error")
-            sys.exit()
+            LOGGING_FILE.write("Name Error")
+            LOGGING_FILE.write("-----------------------------------------------------------\n\n\n")
+            return
 
         # checks if user has stored alog
         if check_user_file.readline().__len__() > 2:
             recent_items = tail("alogs/" + rsn + "/" + "adv_log" + ".txt", 20)
+
+            if recent_items[0] == None:
+                LOGGING_FILE.write("SEEK ERROR: Caused during tail of " + rsn +"'s log.")
+                return
+
 
             re = recent_items[0]
             re_list = re.split('\n')
@@ -131,13 +176,22 @@ def track_user(rsn):
                 event = events[idx]
                 new_event = event['title'] + ": " + event['description']
 
-                if new_event not in re_list:
+                if new_event in re_list:
+                    remaining_events = events[idx:]
+                    utd = True
+                    for e in remaining_events:
+                        if e not in re_list:
+                            utd = False
+                    if utd:
+                        return
+                else:
                     user_log.write(new_event + '\n')
 
                     if 'I found' in event['title']:
                         if 'a pair of' in event['title']:
-                            title = title.split(' ', 5)
+                            title = event['title'].split(' ', 5)
                             drop = title[5]
+                            drop = drop.strip('.')
                         else:
                             title = event['title']
                             title = title.split(' ', 3)
@@ -148,45 +202,45 @@ def track_user(rsn):
 
                         existing_drop = False
                         for loc, x in enumerate(drops):
-                            print("Drop: " + drop)
-                            print("Chek: " + drops[loc])
+                            LOGGING_FILE.write("Drop: " + drop + '\n')
+                            LOGGING_FILE.write("Chek: " + drops[loc] + '\n')
                             if drop in drops[loc]:
                                 drop_data = drops[loc].split(":")
                                 drop_data[1] = int(drop_data[1]) + 1
-                                drops[loc] = "" + drop_data[0] + ":" + drop_data[1]
+                                drops[loc] = "" + drop_data[0] + ":" + str(drop_data[1])
                                 existing_drop = True
                         if not existing_drop:
                             drops.append(drop + ":1\n")
-                            print(drop + " appended.")
-                else:
-                    remaining_events = events[idx:]
-                    utd = True
-                    for e in remaining_events:
-                        if e not in re_list:
-                            utd = False
-                    if utd:
-                        break
-
-
-                    if 'XP' in event['title']:
-                        print("XP MILESTONE")
+                            LOGGING_FILE.write(drop + " appended." + '\n\n')
+                    elif 'XP' in event['title']:
+                        LOGGING_FILE.write("XP MILESTONE\n")
                         xp_data = xp_info.split(":")
                         xp_data[1] = int(xp_data[1]) + 1
                         xp_info = "Experience milestones:" + str(xp_data[1])
                         xp_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "xp_log" + ".txt"), "w")
                         xp_log.write(xp_info)
                         xp_log.close()
-
+                    else:
+                        remaining_events = events[idx:]
+                        utd = True
+                        for e in remaining_events:
+                            if e not in re_list:
+                                utd = False
+                        if utd:
+                            return
             if reprint_drops:
                 drop_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "drop_log" + ".txt"), "w")
                 for d in drops:
                     if d.__len__() > 5:
-                        print(d)
-                        drop_log.write(d)
+                        LOGGING_FILE.write("Drop written to log: " + d + '\n')
+                        if '\n' not in d:
+                            drop_log.write(d + '\n')
+                        else:
+                            drop_log.write(d)
 
 
         else:
-            print("File empty")
+            LOGGING_FILE.write("File empty\n")
             recent_items = None
 
             user_log.write("Adventurer's Log: " + rsn + "\n")
@@ -194,19 +248,28 @@ def track_user(rsn):
             for event in events:
                 new_event = event['title'] + ": " + event['description'] + '\n'
                 user_log.write(new_event)
-                print(event['title'])
+                LOGGING_FILE.write(event['title'] + '\n')
 
                 if 'I found' in event['title']:
-                    title = event['title']
-                    title = title.split(' ', 3)
-                    drop = title[3]
-                    drop = drop.strip(".")
-                    print(drop)
+                    if 'a pair of' in event['title']:
+                        title = event['title'].split(' ', 5)
+                        drop = title[5]
+                        drop = drop.strip('.')
+                    elif (' a ' in event['title']) or (' an ' in event['title']):
+                        title = event['title']
+                        title = title.split(' ', 3)
+                        drop = title[3]
+                        drop = drop.strip(".")
+                    else:
+                        title = event['title']
+                        title = title.split(' ', 2)
+                        drop = title[2]
+                        drop = drop.strip(".")
 
                     existing_drop = False
                     for loc, x in enumerate(drops):
-                        print("Drop: " + drop)
-                        print("Chek: " + drops[loc])
+                        LOGGING_FILE.write("Drop: " + drop + '\n')
+                        LOGGING_FILE.write("Chek: " + drops[loc] + '\n')
                         if drop in drops[loc]:
                             drop_data = drops[loc].split(":")
                             drop_data[1] = int(drop_data[1]) + 1
@@ -214,10 +277,10 @@ def track_user(rsn):
                             existing_drop = True
                     if not existing_drop:
                         drops.append(drop + ":1\n")
-                        print(drop + " appended.")
+                        LOGGING_FILE.write(drop + " appended.\n\n\n")
 
                 if 'XP' in event['title']:
-                    print("XP MILESTONE")
+                    LOGGING_FILE.write("XP MILESTONE\n")
                     xp_data = xp_info.split(":")
                     xp_data[1] = int(xp_data[1]) + 1
                     xp_info = "Experience milestones:" + str(xp_data[1])
@@ -228,12 +291,32 @@ def track_user(rsn):
             drop_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "drop_log" + ".txt"), "w")
             for d in drops:
                 if d.__len__() > 5:
-                    print(d)
+                    #print(d)
                     drop_log.write(d)
 
         check_user_file.close()
         drop_log.close()
         user_log.close()
+
+        LOGGING_FILE.write("")
+
+def update_logs():
+    tracking_roster = open(os.path.join(sys.path[0], "alogs/roster.txt"), "r")
+    roster = tracking_roster.read()
+    tracking_roster.close()
+
+    users = roster.split('\n')
+
+    for user in users:
+        user.strip('\n')
+        if user.__len__() >= 1:
+            track_user(user)
+
+    LOGGING_FILE = open("alog_beta_log.txt", 'a')
+    LOGGING_FILE.write('--------------------------------------------------------------------------\n'
+                       'END OF LOG UPDATES\n'
+                       '--------------------------------------------------------------------------\n')
+    LOGGING_FILE.close()
 
 
 def setup(client):

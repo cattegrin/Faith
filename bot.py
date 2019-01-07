@@ -25,6 +25,7 @@ TOKEN = token_file.read()   #Get at discordapp.com/developers/applications/me
 token_file.close()
 
 client = Bot(command_prefix=BOT_PREFIX)
+client.load_extension('cog')
 
 ss_season = False
 

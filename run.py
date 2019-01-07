@@ -17,7 +17,7 @@ client.load_extension('faith_user')
 client.load_extension('faith_citadel')
 client.load_extension('faith_seasonal')
 client.load_extension('faith_alog')
-
+client.load_extension('faith_utilities')
 
 @client.event
 async def on_ready():

@@ -50,6 +50,7 @@ def get_user(context, rsn):  # gets user mention from RSN
             else:
                 return None
 
+
 def tail(fname, lines):
     bufsize = 8192
     fsize = os.stat(fname).st_size
@@ -63,7 +64,11 @@ def tail(fname, lines):
             data = []
             while True:
                 iter += 1
-                f.seek(fsize - bufsize * iter)
+                try:
+                    f.seek(fsize - bufsize * iter)
+                except ValueError:
+                    print("Tail Failure")
+                    return []
                 data.extend(f.readlines())
                 if len(data) >= lines or f.tell() == 0:
                     recent_events.append(''.join(data[-lines:]))
