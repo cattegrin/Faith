@@ -15,11 +15,7 @@ class Citadel:
     async def citadel_manual_reset(self, context):
         user_roles = context.message.author.roles  # gets user role list
         for role in user_roles:  # loops through user roles
-            if '🗝️ FiH Leader' == role.name:
-                capped_list = open('capped.txt', 'r')  # opens capped list
-                capped_users = capped_list.read()  # gets users who capped
-                capped_list.close()  # closes list
-
+            if '🗝️ FiH Leader' == role.name or 'Beta' in role.name:
                 clear_capped = open('capped.txt', 'w')  # clears list file
                 # write next build tick time
                 clear_capped.close()  # closes list
