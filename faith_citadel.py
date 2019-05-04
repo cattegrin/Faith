@@ -2,6 +2,7 @@ from discord.ext import commands
 from faith_user import get_rsn
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
+import datetime
 
 
 class Citadel:
@@ -16,26 +17,28 @@ class Citadel:
         user_roles = context.message.author.roles  # gets user role list
         for role in user_roles:  # loops through user roles
             if '🗝️ FiH Leader' == role.name or 'Beta' in role.name:
-                clear_capped = open('capped.txt', 'w')  # clears list file
-                # write next build tick time
-                clear_capped.close()  # closes list
+                citadel_reset()
 
-                self.client.say("Capped log manually reset.")
+                await self.client.say("Capped log manually reset.")
 
     @commands.command(name='capped',
                     brief='Reports that you capped at the citadel this week.',
                     pass_context=True)
     async def capped(self, context):
+        capped = open('capped.txt', 'r')  # opens list of capped users
+        capped_list = capped.read()  # reads in capped users
+        capped.close()  # closes list
+
+        day = datetime.datetime.today()
+        if(("Reset: " + day.now().strftime("%Y-%m-%d")) not in capped_list) and (datetime.datetime.today().weekday() == 6):
+            citadel_reset()
+
         player_rsn = get_rsn(context.message.author.mention)  # gets RSN of player
         if player_rsn is None:  # checks to see that RSN has been set
             await self.client.say(
                 "Hey " + context.message.author.mention + ", please set your rsn before using this command. "
                                                           "You can set it by doing ::setrsn <name>.")
             return  # exits function
-
-        capped = open('capped.txt', 'r')  # opens list of capped users
-        capped_list = capped.read()  # reads in capped users
-        capped.close()  # closes list
 
         if player_rsn in capped_list:  # checks if player has already capped
             await self.client.say("Hey " + player_rsn + ", you've already capped this week.")
@@ -50,8 +53,16 @@ class Citadel:
             sheet = g_client.open("RuneScape Clan Ranks by Points").get_worksheet(1)
 
             # updates user points
-            row = sheet.find(player_rsn).row
-            sheet.update_cell(row, 7, int(sheet.cell(row, 7).value) + 5)
+            user_list = sheet.col_values(1)
+            if player_rsn in user_list:
+                row = sheet.find(player_rsn).row
+                sheet.update_cell(row, 7, int(sheet.cell(row, 7).value) + 5)
+            else:
+                row = user_list.__len__() + 1
+                sheet.update_cell(row, 1, player_rsn)
+                sheet.update_cell(row, 7, 5)
+                await self.client.send_message(context.message.channel.server.owner,
+                                         player_rsn + " not found on rank sheet, attempting to update...")
 
             capped_write = open('capped.txt', 'a')  # opens capped list in append mode
             capped_write.write(player_rsn + '\n')  # adds user to list
@@ -66,12 +77,10 @@ class Citadel:
             return
 
 
-def citadel_reset():
-    capped_list = open('capped.txt', 'r')           #opens capped list
-    capped_users = capped_list.read()               #gets users who capped
-    capped_list.close()                             #closes list
 
+def citadel_reset():
     clear_capped = open('capped.txt', 'w')      #clears list file
+    clear_capped.write("Reset:" + datetime.datetime.today().now().strftime("%Y-%m-%d") + '\n')
     clear_capped.close()                        #closes list
 
 

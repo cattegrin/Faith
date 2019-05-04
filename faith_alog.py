@@ -1,11 +1,14 @@
 import urllib
-import xmltodict
 import os
 import sys
+import datetime
+import xmltodict
+
 from faith_utilities import get_rsn
 from faith_utilities import say
 from faith_utilities import tail
 from discord.ext import commands
+
 
 class Alog:
     def __init__(self, client):
@@ -39,27 +42,44 @@ class Alog:
                 await self.client.say("I'm already keeping track of your adventurer log " + rsn)
         elif args[0] == 'track':
             track(self.client, rsn)
+            await self.client.say("User " + rsn + "'s Adventurer Log has been updated.")
         elif args[0] == 'drops':
-            print("Getting drops for " + rsn)
+            await self.client.say("Getting drops for " + rsn)
             await self.client.say(pull_drops(rsn))
+        elif args[0] == 'help':
+            alog_docs = open("alog_docs.txt", 'r')
+            alog_help = alog_docs.read()
+            alog_docs.close()
+            await self.client.say(alog_help)
+            return
+        elif args[0] == 'reset':
+            await self.client.say("Resetting logs for " + rsn)
+            reset_user(rsn)
         else:
             await self.client.say("Command not recognized.")
 
+
 def track(client, rsn):
+    print("Track request received")
     tracking_roster = open(os.path.join(sys.path[0], "alogs/roster.txt"), "r")
     roster = tracking_roster.read()
+    print("Roster Saved")
     tracking_roster.close()
 
     if rsn in roster:
         track_user(rsn)
         say(client, "User " + rsn + "'s Adventurer Log has been updated.")
+        print("User " + rsn + "'s Adventurer Log has been updated.")
     else:
         say(client, "Your adventures are not currently being tracked. Please enable tracking by doing ::alog activate")
+        print("Your adventures are not currently being tracked. Please enable tracking by doing ::alog activate")
+
 
 def pull_drops(rsn):
     drop_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "drop_log" + ".txt"), "r")
     drops = drop_log.read()
     return("```------Drop List for " + rsn + '------\n' + drops + "---------------------------------```")
+
 
 def active_tracking(rsn):
     tracking_roster = open(os.path.join(sys.path[0], "alogs/roster.txt"), "r")
@@ -71,13 +91,18 @@ def active_tracking(rsn):
         tracking_roster.write(rsn + '\n')
         tracking_roster.close()
 
-        os.mkdir("alogs/" + rsn + "/")
-        drop_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "drop_log" + ".txt"), "w")
-        xp_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "xp_log" + ".txt"), "w")
-        xp_log.write("Experience milestones:0")
+        try:
+            os.mkdir("alogs/" + rsn + "/")
+            adv_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "adv_log" + ".txt"), "w")
+            drop_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "drop_log" + ".txt"), "w")
+            xp_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "xp_log" + ".txt"), "w")
+            xp_log.write("Experience milestones:0")
 
-        drop_log.close()
-        xp_log.close()
+            adv_log.close()
+            drop_log.close()
+            xp_log.close()
+        except (FileExistsError):
+            print("User files exist, running trace.")
 
         track_user(rsn)
 
@@ -97,6 +122,8 @@ def track_user(rsn):
 
         LOGGING_FILE.write("-----------------------------------------------------------\n")
         LOGGING_FILE.write("User Being Tracked: " + rsn + "\n")
+        LOGGING_FILE.write(datetime.datetime.now().__str__() + "\n")
+
         rsn_append = ''
         rsn_split = []
 
@@ -300,6 +327,7 @@ def track_user(rsn):
 
         LOGGING_FILE.write("")
 
+
 def update_logs():
     tracking_roster = open(os.path.join(sys.path[0], "alogs/roster.txt"), "r")
     roster = tracking_roster.read()
@@ -317,6 +345,17 @@ def update_logs():
                        'END OF LOG UPDATES\n'
                        '--------------------------------------------------------------------------\n')
     LOGGING_FILE.close()
+
+
+def reset_user(rsn):
+    adv_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "adv_log" + ".txt"), "w")
+    drop_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "drop_log" + ".txt"), "w")
+    xp_log = open(os.path.join(sys.path[0], "alogs/" + rsn + "/" + "xp_log" + ".txt"), "w")
+    xp_log.write("Experience milestones:0")
+
+    adv_log.close()
+    drop_log.close()
+    xp_log.close()
 
 
 def setup(client):
