@@ -5,7 +5,7 @@ import gspread
 import datetime
 
 
-class Citadel:
+class Citadel(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.counter = 0
@@ -19,7 +19,7 @@ class Citadel:
             if '🗝️ FiH Leader' == role.name or 'Beta' in role.name:
                 citadel_reset()
 
-                await self.client.say("Capped log manually reset.")
+                await context.message.channel.send("Capped log manually reset.")
 
     @commands.command(name='capped',
                     brief='Reports that you capped at the citadel this week.',
@@ -35,13 +35,13 @@ class Citadel:
 
         player_rsn = get_rsn(context.message.author.mention)  # gets RSN of player
         if player_rsn is None:  # checks to see that RSN has been set
-            await self.client.say(
+            await context.message.channel.send(
                 "Hey " + context.message.author.mention + ", please set your rsn before using this command. "
                                                           "You can set it by doing ::setrsn <name>.")
             return  # exits function
 
         if player_rsn in capped_list:  # checks if player has already capped
-            await self.client.say("Hey " + player_rsn + ", you've already capped this week.")
+            await context.message.channel.send("Hey " + player_rsn + ", you've already capped this week.")
             return
 
         scope = ['https://spreadsheets.google.com/feeds',
@@ -68,11 +68,11 @@ class Citadel:
             capped_write.write(player_rsn + '\n')  # adds user to list
             capped_write.close()  # closes list
 
-            await self.client.say("Thanks for capping " + player_rsn + "!")  # thanks the player for capping
+            await context.message.channel.send("Thanks for capping " + player_rsn + "!")  # thanks the player for capping
         except:
             print("Client operation failed.")
 
-            await self.client.say("Hey " + get_rsn(
+            await context.message.channel.send("Hey " + get_rsn(
                 context.message.author.mention) + ", there was an error adding your points to the spreadsheet. Please check that the name you set with ::setrsn matches your actual RSN (CaSe SeNSiTiVE")
             return
 

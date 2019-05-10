@@ -3,28 +3,8 @@ import xmltodict
 import os
 import sys
 import re
-
-
-def tail(fname, lines):
-    bufsize = 8192
-    fsize = os.stat(fname).st_size
-    iter = 0
-
-    recent_events = []
-
-    with open(fname) as f:
-        if bufsize > fsize:
-            bufsize = fsize - 1
-            data = []
-            while True:
-                iter += 1
-                f.seek(fsize - bufsize * iter)
-                data.extend(f.readlines())
-                if len(data) >= lines or f.tell() == 0:
-                    recent_events.append(''.join(data[-lines:]))
-                    break
-
-    return recent_events
+import runescapeapi
+from faith_utilities import tail
 
 
 page = 'http://services.runescape.com/m=adventurers-log/c=tB0ermS1flc/rssfeed?searchName=Jaycole'
@@ -50,6 +30,7 @@ except FileNotFoundError:
         os.mkdir("alogs/Jaycole/")
         user_log = open(os.path.join(sys.path[0], "alogs/Jaycole/" + "adv_log" + ".txt"), "a")
         drop_log = open(os.path.join(sys.path[0], "alogs/Jaycole/" + "drop_log" + ".txt"), "r+")
+        xp_log = open(os.path.join(sys.path[0], "alogs/Jaycole/" + "xp_log" + ".txt"), "r+")
         check_user_file = open(os.path.join(sys.path[0], "alogs/Jaycole/" + "adv_log" + ".txt"), "r")
     except OSError:
         print("Creation of the directory failed")

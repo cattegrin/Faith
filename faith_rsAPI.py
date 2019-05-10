@@ -5,7 +5,7 @@ from faith_utilities import get_user
 import sys
 from faith_utilities import get_rsn
 
-class rsAPI:
+class rsAPI(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.counter = 0
@@ -41,7 +41,7 @@ class rsAPI:
 
         stat_line += total_level
         stat_line += "\n------------------------------------------------```"
-        await self.client.say(stat_line)
+        await context.message.channel.send(stat_line)
 
         print(total_level)
 

@@ -4,7 +4,7 @@ from faith_utilities import get_user
 import sys
 
 
-class Admin:
+class Admin(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.counter = 0
@@ -15,7 +15,7 @@ class Admin:
                       pass_context=True)
     async def register(self, context, key):
         if key != 110:  # checks to see if key is correct
-            await self.client.say("Incorreect key. Please contact a server member for the key.")
+            await context.message.channel.send("Incorreect key. Please contact a server member for the key.")
         else:
             self.client.delete_message(context.message)  # removes message so key is not made public
             user = context.message.author  # gets user from message
@@ -44,6 +44,7 @@ class Admin:
         user_roles = context.message.author.roles  # gets user role list
         for role in user_roles:  # loops through user roles
             if '🗝️ FiH Leader' == role.name:
+                await context.message.channel.send("Good night!")
                 sys.exit()
 
 

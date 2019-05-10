@@ -1,7 +1,9 @@
 import re
 from discord.utils import find
 import os
+import asyncio
 import sys
+
 
 class Utilities:
     def __init__(self, client):
@@ -63,17 +65,18 @@ def tail(fname, lines):
             bufsize = fsize - 1
             data = []
             while True:
-                iter += 1
                 try:
+                    iter += 1
                     f.seek(fsize - bufsize * iter)
+                    data.extend(f.readlines())
+                    if len(data) >= lines or f.tell() == 0:
+                        recent_events.append(''.join(data[-lines:]))
+                        break
                 except ValueError:
-                    print("Tail Failure")
-                    return []
-                data.extend(f.readlines())
-                if len(data) >= lines or f.tell() == 0:
-                    recent_events.append(''.join(data[-lines:]))
-                    break
+                    return None
+
     return recent_events
+
 
 def say(client, message):
     client.say(message)

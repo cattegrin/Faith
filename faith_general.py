@@ -6,7 +6,7 @@ import json
 import aiohttp
 
 
-class General:
+class General(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.counter = 0
@@ -22,25 +22,15 @@ class General:
 
         player_rsn = get_rsn(user)  # gets the rsn of the user
         if player_rsn is None:  # checks if player has not set RSN
-            await self.client.say("I noticed you haven't yet set your RSN, you can do so by doing ::setrsn <name>.\n")
+            await context.message.channel.send("I noticed you haven't yet set your RSN, you can do so by doing ::setrsn <name>.\n")
 
         elif player_rsn.lower() == 'malnec' or player_rsn.lower() == 'no wait nvm':  # checks if messenger is Malnec or Ace
             possible_responses = [
-                'Fuck yes',
-                'Hell no',
-                "I don't like you",
-                'Can you like, ask someone else',
-                'Stop spamming me with questions',
-                'I mean kinda yeah',
                 'Please DONT do that',
-                'Why are you even asking just go p500',
-                'Just leave',
-                "Hold on I'm at the sand casino",
                 '8ball machine broke',
-                'Ask Darth',
-                'Ask your mother'
+                'Ask someone else',
             ]
-            await self.client.say(random.choice(
+            await context.message.channel.send(random.choice(
                 possible_responses) + ", " + context.message.author.mention)  # picks a random option and sends it back to command user
         elif player_rsn is not None:
             possible_responses = [
@@ -54,7 +44,7 @@ class General:
                 'Why are you even asking, its obviously a yes',
                 'Just no'
             ]
-            await self.client.say(random.choice(
+            await context.message.channel.send(random.choice(
                 possible_responses) + ", " + context.message.author.mention)  # picks a random option and sends it back to command user
 
     @commands.command(name='bitcoin',
@@ -65,13 +55,13 @@ class General:
             raw_response = await session.get(url)
             response = await raw_response.text()
             response = json.loads(response)
-            await self.client.say("Bitcoin price is: $" + response['bpi']['USD']['rate'])
+            await context.message.channel.send("Bitcoin price is: $" + response['bpi']['USD']['rate'])
 
     @commands.command(name='square',
                     brief='Squares a number.')
     async def square(self, number):
         squared_value = int(number) * int(number)  # takes in a value and squares it
-        await self.client.say(str(number) + " squared is " + str(squared_value))  # prints result to user
+        await context.message.channel.send(str(number) + " squared is " + str(squared_value))  # prints result to user
 
     @commands.command(name='hello',
                       brief='Says hello!',
@@ -79,9 +69,9 @@ class General:
     async def hello(self, context):
         player_rsn = get_rsn(context.message.author.mention)  # gets RSN of user
         if player_rsn is None:  # checks if RSN has been set
-            await self.client.say("Hello " + context.message.author.mention + "!")  # says hello to user using their mention
+            await context.message.channel.send("Hello " + context.message.author.mention + "!")  # says hello to user using their mention
         else:
-            await self.client.say("Hello " + player_rsn + "!")  # says hello to user using their RSN
+            await context.message.channel.send("Hello " + player_rsn + "!")  # says hello to user using their RSN
 
     @commands.command(name='ticket',
                       brief='Sends a support ticket to Server Owner.',

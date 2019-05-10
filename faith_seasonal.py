@@ -9,7 +9,7 @@ import re
 
 ss_season = False
 
-class Seasonal:
+class Seasonal(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.counter = 0
@@ -98,7 +98,7 @@ class Seasonal:
                     time.sleep(1)  # waits one second to avoid overrunning action limits
 
                 f.close()  # closes santa log
-                await self.client.say(
+                await context.message.channel.send(
                     "Secret Santa targets have been sent out! Check your inbox for your person!")  # announces that santa targets have been sent.
 
     @commands.command(name='santa',
@@ -106,7 +106,7 @@ class Seasonal:
                     pass_context=True)
     async def santa(self, context):
         if not ss_season:
-            await self.client.say("Hey " + get_rsn(context.message.author.mention) + ", it's not the season for that event!")
+            await context.message.channel.send("Hey " + get_rsn(context.message.author.mention) + ", it's not the season for that event!")
 
         player_rsn = get_rsn(context.message.author.mention)  # gets RSN of command user
 
@@ -115,17 +115,17 @@ class Seasonal:
         ss_entered.close()  # closes roster
 
         if player_rsn is None:  # if RSN hasn't been set inform user
-            await self.client.say("Hey " + context.message.author.mention + ", you have'nt set your RSN. \n"
+            await context.message.channel.send("Hey " + context.message.author.mention + ", you have'nt set your RSN. \n"
                                                                        "Please set it with ::setrsn <name>.")
             return
         elif player_rsn in ss_entries:  # checks if user is already in secret santa
-            await self.client.say("You've already entered the Secret Santa event " + player_rsn + "!")
+            await context.message.channel.send("You've already entered the Secret Santa event " + player_rsn + "!")
             return
 
         ss_list = open('secret_santa.txt', 'a')  # opens secret santa roster in append mode
         ss_list.write(player_rsn + "\n")  # adds new user to roster
         ss_list.close()  # closes roster
-        await self.client.say(
+        await context.message.channel.send(
             context.message.author.mention + " has joined the Secret Santa event!")  # informs user that they have registered for Secret Santa
 
 

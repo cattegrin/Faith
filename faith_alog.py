@@ -10,7 +10,7 @@ from faith_utilities import tail
 from discord.ext import commands
 
 
-class Alog:
+class Alog(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.counter = 0
@@ -24,39 +24,39 @@ class Alog:
             alog_docs = open("alog_docs.txt", 'r')
             alog_help = alog_docs.read()
             alog_docs.close()
-            await self.client.say(alog_help)
+            await context.message.channel.send(alog_help)
             return
 
         args = argv.split(' ')
         rsn = get_rsn(context.message.author.mention)
 
         if rsn is None:
-            await self.client.say("Hey " + context.message.author.mention + ", you haven't set your RSN yet. Set it with ::setrsn")
+            await context.message.channel.send("Hey " + context.message.author.mention + ", you haven't set your RSN yet. Set it with ::setrsn")
             return
 
         if args[0] == 'activate':
             user_tracking = active_tracking(rsn)
             if user_tracking is True:
-                await self.client.say("User " + rsn + " added to active tracking roster.")
+                await context.message.channel.send("User " + rsn + " added to active tracking roster.")
             else:
-                await self.client.say("I'm already keeping track of your adventurer log " + rsn)
+                await context.message.channel.send("I'm already keeping track of your adventurer log " + rsn)
         elif args[0] == 'track':
             track(self.client, rsn)
-            await self.client.say("User " + rsn + "'s Adventurer Log has been updated.")
+            await context.message.channel.send("User " + rsn + "'s Adventurer Log has been updated.")
         elif args[0] == 'drops':
-            await self.client.say("Getting drops for " + rsn)
-            await self.client.say(pull_drops(rsn))
+            await context.message.channel.send("Getting drops for " + rsn)
+            await context.message.channel.send(pull_drops(rsn))
         elif args[0] == 'help':
             alog_docs = open("alog_docs.txt", 'r')
             alog_help = alog_docs.read()
             alog_docs.close()
-            await self.client.say(alog_help)
+            await context.message.channel.send(alog_help)
             return
         elif args[0] == 'reset':
-            await self.client.say("Resetting logs for " + rsn)
+            await context.message.channel.send("Resetting logs for " + rsn)
             reset_user(rsn)
         else:
-            await self.client.say("Command not recognized.")
+            await context.message.channel.send("Command not recognized.")
 
 
 def track(client, rsn):

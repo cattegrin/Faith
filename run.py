@@ -2,6 +2,7 @@ from discord.ext.commands import Bot
 from discord import Game
 import schedule
 from faith_citadel import citadel_reset
+from faith_alog import update_logs
 import re
 import asyncio
 
@@ -12,12 +13,13 @@ token_file.close()
 
 client = Bot(command_prefix=BOT_PREFIX)
 client.load_extension('faith_admin')
+client.load_extension('faith_alog')
 client.load_extension('faith_general')
 client.load_extension('faith_user')
 client.load_extension('faith_citadel')
 client.load_extension('faith_seasonal')
 client.load_extension('faith_alog')
-client.load_extension('faith_utilities')
+client.load_extension('faith_rsAPI')
 
 @client.event
 async def on_ready():
@@ -50,6 +52,8 @@ async def list_servers():
             print("User list cleaned.")
 
         user_file.close()  # closes user file
+
+        update_logs()
 
         await asyncio.sleep(600)  # 5 minute sleep
 
