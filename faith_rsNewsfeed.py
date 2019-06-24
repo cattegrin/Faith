@@ -14,16 +14,16 @@ class RsNewsFeed(commands.Cog):
         self.counter = 0
 
     @commands.command(name='checknews',
-                      brief='Updates the news feed. .',
+                      brief='Updates the news feed.',
                       pass_context=True)
     async def checknews(self, context):
-        check_news_feed()
+        await check_news_feed(self.client)
         print("News feed updated.\n")
 
 
 
 async def check_news_feed(client):
-    news = client.get_channel(id=576171984036298772)
+    news = client.get_channel(id=579125498781630467)
     print(news)
 
     page = "https://secure.runescape.com/m=news/latest_news.rss"
@@ -39,14 +39,16 @@ async def check_news_feed(client):
 
 
     data_table = dict_data['rss']['channel']
-
     articles = data_table['item']
-    archive_items = tail("news_archive.txt", 10)
+
+    archive_file = open("news_archive.txt", "r")
+    archive_items = archive_file.read()
+    archive_file.close()
+
+    print(articles)
 
     if archive_items != None:
-        a = archive_items[0]
-        archive = a.split('\n')
-        print(archive)
+        archive = archive_items.split('\n')
     else:
         archive = ""
 
@@ -54,9 +56,11 @@ async def check_news_feed(client):
 
     for idx, a in enumerate(articles):
         article = articles[idx]
-        new_article = article['title'] + ": " + article['description'] + "\nRead Here: " + article['link'] + " \n"
+        new_article = "**" + article['title'] + "**\n" + article['description'] + "\nRead Here: " + article['link'] + "\n"
+        title = "**" + article['title'] + "**";
 
-        if new_article not in archive:
+        if title not in archive:
+            print("NEW TITLE: " + title)
             archive_add.write(new_article)
             await send_news(news, new_article)
         else:
@@ -64,13 +68,13 @@ async def check_news_feed(client):
 
     archive_add.close()
 
-async def send_news(channel, article):
 
+async def send_news(channel, article):
     try:
         await channel.send(article)
     except AttributeError:
         print("Attribute Error")
-        if(channel == None):
+        if channel is None:
             print("Channel is none.")
         else:
             print("Channel is not none.")

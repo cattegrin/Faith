@@ -73,6 +73,7 @@ def tail(fname, lines):
                         recent_events.append(''.join(data[-lines:]))
                         break
                 except ValueError:
+                    print("Value error while tailing file: " + fname)
                     return None
 
     return recent_events

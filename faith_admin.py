@@ -44,7 +44,7 @@ class Admin(commands.Cog):
         user_roles = context.message.author.roles  # gets user role list
         for role in user_roles:  # loops through user roles
             if '🗝️ FiH Leader' == role.name:
-                await context.message.channel.send("Good night!")
+                await context.message.channel.send("Goodnight " + context.message.author.mention + "!")
                 sys.exit()
 
 
