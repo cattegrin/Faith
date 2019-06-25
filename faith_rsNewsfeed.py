@@ -24,7 +24,6 @@ class RsNewsFeed(commands.Cog):
 
 async def check_news_feed(client):
     news = client.get_channel(id=579125498781630467)
-    print(news)
 
     page = "https://secure.runescape.com/m=news/latest_news.rss"
 
@@ -45,8 +44,6 @@ async def check_news_feed(client):
     archive_items = archive_file.read()
     archive_file.close()
 
-    print(articles)
-
     if archive_items != None:
         archive = archive_items.split('\n')
     else:
@@ -60,7 +57,6 @@ async def check_news_feed(client):
         title = "**" + article['title'] + "**";
 
         if title not in archive:
-            print("NEW TITLE: " + title)
             archive_add.write(new_article)
             await send_news(news, new_article)
         else:
